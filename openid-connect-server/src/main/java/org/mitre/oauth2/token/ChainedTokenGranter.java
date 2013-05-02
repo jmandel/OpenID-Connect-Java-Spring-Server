@@ -14,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
-import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 import org.springframework.stereotype.Component;
 
@@ -48,14 +48,14 @@ public class ChainedTokenGranter extends AbstractTokenGranter {
      * @see org.springframework.security.oauth2.provider.token.AbstractTokenGranter#getOAuth2Authentication(org.springframework.security.oauth2.provider.AuthorizationRequest)
      */
     @Override
-    protected OAuth2Authentication getOAuth2Authentication(AuthorizationRequest authorizationRequest) throws AuthenticationException, InvalidTokenException {
+    protected OAuth2Authentication getOAuth2Authentication(TokenRequest tokenRequest) throws AuthenticationException, InvalidTokenException {
     	// read and load up the existing token
-	    String incomingTokenValue = authorizationRequest.getAuthorizationParameters().get("token");
+	    String incomingTokenValue = tokenRequest.getParameters().get("token");
 	    OAuth2AccessTokenEntity incomingToken = tokenServices.readAccessToken(incomingTokenValue);
 	    
 	    // check for scoping in the request, can't up-scope with a chained request
 	    Set<String> approvedScopes = incomingToken.getScope();
-	    Set<String> requestedScopes = authorizationRequest.getScope();
+	    Set<String> requestedScopes = tokenRequest.getScope();
 	    
 	    if (requestedScopes == null) {
 	    	requestedScopes = new HashSet<String>();
@@ -72,20 +72,20 @@ public class ChainedTokenGranter extends AbstractTokenGranter {
 	    if (approvedScopes.containsAll(requestedScopes)) {
 
 	    	// build an appropriate auth request to hand to the token services layer
-	    	authorizationRequest.setApproved(true);
+	    	tokenRequest.setApproved(true);
 	    	if (requestedScopes.isEmpty()) {
 	    		// if there are no scopes, inherit the original scopes from the token
-	    		authorizationRequest.setScope(approvedScopes);
+	    		tokenRequest.setScope(approvedScopes);
 	    	} else {
 	    		// if scopes were asked for, give only the subset of scopes requested
 	    		// this allows safe downscoping
-	    		authorizationRequest.setScope(Sets.intersection(requestedScopes, approvedScopes));
+	    		tokenRequest.setScope(Sets.intersection(requestedScopes, approvedScopes));
 	    	}
 		    
 		    // NOTE: don't revoke the existing access token
 
 	    	// create a new access token
-	    	OAuth2Authentication authentication = new OAuth2Authentication(authorizationRequest, incomingToken.getAuthenticationHolder().getAuthentication().getUserAuthentication()); 
+	    	OAuth2Authentication authentication = new OAuth2Authentication(tokenRequest, incomingToken.getAuthenticationHolder().getAuthentication().getUserAuthentication()); 
 	    	
 	    	return authentication;
 	    	

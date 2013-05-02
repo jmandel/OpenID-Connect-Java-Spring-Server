@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.AuthorizationRequestManager;
 import org.springframework.security.oauth2.provider.ClientDetails;
+import org.springframework.security.oauth2.provider.OAuthRequest;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
@@ -80,11 +81,11 @@ public class ConnectAuthorizationRequestManager implements AuthorizationRequestM
 		String requestNonce = parameters.get("nonce");
 		
 		AuthorizationRequest request = new AuthorizationRequest(parameters, Collections.<String, String> emptyMap(), 
-				parameters.get(AuthorizationRequest.CLIENT_ID), 
-				OAuth2Utils.parseParameterList(parameters.get(AuthorizationRequest.SCOPE)), null,
-				null, false, parameters.get(AuthorizationRequest.STATE), 
-				parameters.get(AuthorizationRequest.REDIRECT_URI), 
-				OAuth2Utils.parseParameterList(parameters.get(AuthorizationRequest.RESPONSE_TYPE)));
+				parameters.get(OAuthRequest.CLIENT_ID), 
+				OAuth2Utils.parseParameterList(parameters.get(OAuthRequest.SCOPE)), null,
+				null, false, parameters.get(OAuthRequest.STATE), 
+				parameters.get(OAuthRequest.REDIRECT_URI), 
+				OAuth2Utils.parseParameterList(parameters.get(OAuthRequest.RESPONSE_TYPE)));
 		
 		//Only process if the user is authenticated. If the user is not authenticated yet, this 
 		//code will be called a second time once the user is redirected from the login page back 
