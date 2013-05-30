@@ -15,7 +15,7 @@ INSERT INTO trusted_registry_TEMP (uri) VALUES
  
 INSERT INTO users_TEMP (username, password, enabled) VALUES
   ('jricher', 'password', true),
-  ('j', 'j', true),
+  ('demo', 'demo', true),
   ('aanganes','password',true),
   ('mfranklin','password',true),
   ('srmoore','password',true);
@@ -23,6 +23,7 @@ INSERT INTO users_TEMP (username, password, enabled) VALUES
 INSERT INTO authorities_TEMP (username, authority) VALUES
   ('jricher', 'ROLE_ADMIN'),
   ('aanganes','ROLE_ADMIN'),
+  ('demo', 'ROLE_USER'),
   ('jricher', 'ROLE_USER'),
   ('aanganes','ROLE_USER'),
   ('mfranklin','ROLE_USER'),
