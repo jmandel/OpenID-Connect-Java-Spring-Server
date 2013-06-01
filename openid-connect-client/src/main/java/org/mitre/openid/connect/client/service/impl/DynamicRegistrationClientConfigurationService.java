@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.ClientDetailsEntityJsonProcessor;
 import org.mitre.openid.connect.client.service.ClientConfigurationService;
@@ -34,7 +33,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.web.client.RestTemplate;
 
 import com.google.common.cache.CacheBuilder;
