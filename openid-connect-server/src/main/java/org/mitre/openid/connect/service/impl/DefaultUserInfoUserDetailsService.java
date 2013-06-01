@@ -47,6 +47,14 @@ public class DefaultUserInfoUserDetailsService implements UserDetailsService {
 
 	private List<String> admins = new ArrayList<String>();
 
+
+	/**
+	 * Default constructor for Spring DI
+	 * 
+	 */
+	public DefaultUserInfoUserDetailsService() {
+	}
+
 	/**
 	 * Parameterized constructor for use in test harnesses.
 	 * 
