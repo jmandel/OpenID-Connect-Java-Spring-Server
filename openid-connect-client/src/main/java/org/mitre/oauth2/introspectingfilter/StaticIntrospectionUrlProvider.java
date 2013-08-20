@@ -14,41 +14,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package org.mitre.openid.connect.client;
-
+/**
+ * 
+ */
+package org.mitre.oauth2.introspectingfilter;
 
 /**
- * Unit test for OIDCAuthenticationFilter
  * 
- * @author amanda
+ * Always provides the (configured) IntrospectionURL regardless of token. Useful for talking to
+ * a single, trusted authorization server.
+ * 
+ * @author jricher
  *
  */
-//@RunWith(SpringJUnit4ClassRunner.class)
-//@ContextConfiguration(locations = { "classpath:test-context.xml" })
-public class AbstractOIDCAuthenticationFilterTest {
+public class StaticIntrospectionUrlProvider implements IntrospectionUrlProvider {
 
-	//@Autowired
-	private OIDCAuthenticationFilter filter;
+	private String introspectionUrl;
 
-	//@Test
-	public void testUrlConstruction() {
-
+	/**
+	 * @return the introspectionUrl
+	 */
+	public String getIntrospectionUrl() {
+		return introspectionUrl;
 	}
 
 	/**
-	 * @return the filter
+	 * @param introspectionUrl the introspectionUrl to set
 	 */
-	public OIDCAuthenticationFilter getFilter() {
-		return filter;
+	public void setIntrospectionUrl(String introspectionUrl) {
+		this.introspectionUrl = introspectionUrl;
 	}
 
-	/**
-	 * @param filter the filter to set
+	/* (non-Javadoc)
+	 * @see org.mitre.oauth2.introspectingfilter.IntrospectionUrlProvider#getIntrospectionUrl(java.lang.String)
 	 */
-	public void setFilter(OIDCAuthenticationFilter filter) {
-		this.filter = filter;
+	@Override
+	public String getIntrospectionUrl(String accessToken) {
+		return getIntrospectionUrl();
 	}
-
-
 
 }

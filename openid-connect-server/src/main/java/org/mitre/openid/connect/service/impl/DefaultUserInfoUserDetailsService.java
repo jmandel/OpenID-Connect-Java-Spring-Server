@@ -40,30 +40,13 @@ import org.springframework.stereotype.Service;
 public class DefaultUserInfoUserDetailsService implements UserDetailsService {
 
 	@Autowired
-	UserInfoRepository repository;
+	private UserInfoRepository repository;
 
 	public static final GrantedAuthority ROLE_USER = new SimpleGrantedAuthority("ROLE_USER");
 	public static final GrantedAuthority ROLE_ADMIN = new SimpleGrantedAuthority("ROLE_ADMIN");
 
 	private List<String> admins = new ArrayList<String>();
 
-
-	/**
-	 * Default constructor for Spring DI
-	 * 
-	 */
-	public DefaultUserInfoUserDetailsService() {
-	}
-
-	/**
-	 * Parameterized constructor for use in test harnesses.
-	 * 
-	 * @param repository the UserInfoRepository to set
-	 */
-	public DefaultUserInfoUserDetailsService(UserInfoRepository repository) {
-		this.repository = repository;
-	}
-	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		UserInfo userInfo = repository.getByUsername(username);

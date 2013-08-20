@@ -36,7 +36,7 @@ public class BBPermissions {
     		return false;
     	
     	OAuth2Authentication oa = (OAuth2Authentication) auth;
-    	Set<String> scopes = oa.getAuthorizationRequest().getScope();
+    	Set<String> scopes = oa.getOAuth2Request().getScope();
     	
     	for(String  s : scopes) {
     		if (scopeService.baseScopeString(s).equals(scope))

@@ -14,20 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-
 package org.mitre.openid.connect.web;
 
+import java.util.Date;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.utils.URIUtils;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.bbplus.TrustedRegistrationValidator;
+import org.mitre.jwt.signer.service.JwtSigningAndValidationService;
+import org.mitre.oauth2.model.AuthenticationHolderEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.oauth2.model.SystemScope;
+import org.mitre.oauth2.repository.AuthenticationHolderRepository;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
@@ -42,8 +47,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.provider.DefaultAuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -52,7 +57,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 @Controller
 @RequestMapping(value = "/register")
@@ -63,10 +74,19 @@ public class ClientDynamicRegistrationEndpoint {
 
 	@Autowired
 	private OAuth2TokenEntityService tokenService;
+	
+	@Autowired
+	private JwtSigningAndValidationService jwtService;
+	
+	@Autowired
+	private ConfigurationPropertiesBean configBean;
+	
+	@Autowired
+	private AuthenticationHolderRepository authenticationHolderRepository;
 
 	@Autowired
 	private SystemScopeService scopeService;
-	
+
 	@Autowired
 	private ConfigurationPropertiesBean config;
 
@@ -164,15 +184,13 @@ public class ClientDynamicRegistrationEndpoint {
 			OAuth2AccessTokenEntity token = createRegistrationAccessToken(savedClient);
 
 			// send it all out to the view
-			
+
 			// TODO: urlencode the client id for safety?
 			RegisteredClient registered = new RegisteredClient(savedClient, token.getValue(), config.getIssuer() + "register/" + savedClient.getClientId());
-			
+
 			m.addAttribute("client", registered);
 			m.addAttribute("code", HttpStatus.CREATED); // http 201
-			//m.addAttribute("token", token);
-			//m.addAttribute("uri", config.getIssuer() + "register/" + savedClient.getClientId());
-			
+
 			return "clientInformationResponseView";
 		} else {
 			// didn't parse, this is a bad request
@@ -197,7 +215,7 @@ public class ClientDynamicRegistrationEndpoint {
 
 		ClientDetailsEntity client = clientService.loadClientByClientId(clientId);
 
-		if (client != null && client.getClientId().equals(auth.getAuthorizationRequest().getClientId())) {
+		if (client != null && client.getClientId().equals(auth.getOAuth2Request().getClientId())) {
 
 
 			// we return the token that we got in
@@ -210,15 +228,12 @@ public class ClientDynamicRegistrationEndpoint {
 			// send it all out to the view
 			m.addAttribute("client", registered);
 			m.addAttribute("code", HttpStatus.OK); // http 200
-			//m.addAttribute("token", token);
-			// TODO: urlencode the client id for safety?
-			//m.addAttribute("uri", config.getIssuer() + "register/" + client.getClientId());
 
 			return "clientInformationResponseView";
 		} else {
 			// client mismatch
 			logger.error("readClientConfiguration failed, client ID mismatch: "
-					+ clientId + " and " + auth.getAuthorizationRequest().getClientId() + " do not match.");
+					+ clientId + " and " + auth.getOAuth2Request().getClientId() + " do not match.");
 			m.addAttribute("code", HttpStatus.FORBIDDEN); // http 403
 
 			return "httpCodeView";
@@ -242,7 +257,7 @@ public class ClientDynamicRegistrationEndpoint {
 		ClientDetailsEntity oldClient = clientService.loadClientByClientId(clientId);
 
 		if (newClient != null && oldClient != null  // we have an existing client and the new one parsed
-				&& oldClient.getClientId().equals(auth.getAuthorizationRequest().getClientId()) // the client passed in the URI matches the one in the auth
+				&& oldClient.getClientId().equals(auth.getOAuth2Request().getClientId()) // the client passed in the URI matches the one in the auth
 				&& oldClient.getClientId().equals(newClient.getClientId()) // the client passed in the body matches the one in the URI
 				) {
 
@@ -286,15 +301,12 @@ public class ClientDynamicRegistrationEndpoint {
 			// send it all out to the view
 			m.addAttribute("client", registered);
 			m.addAttribute("code", HttpStatus.OK); // http 200
-			//m.addAttribute("token", token);
-			// TODO: urlencode the client id for safety?
-			//m.addAttribute("uri", config.getIssuer() + "register/" + savedClient.getClientId());
 
 			return "clientInformationResponseView";
 		} else {
 			// client mismatch
 			logger.error("readClientConfiguration failed, client ID mismatch: "
-					+ clientId + " and " + auth.getAuthorizationRequest().getClientId() + " do not match.");
+					+ clientId + " and " + auth.getOAuth2Request().getClientId() + " do not match.");
 			m.addAttribute("code", HttpStatus.FORBIDDEN); // http 403
 
 			return "httpCodeView";
@@ -314,25 +326,22 @@ public class ClientDynamicRegistrationEndpoint {
 
 		ClientDetailsEntity client = clientService.loadClientByClientId(clientId);
 
-		if (client != null && client.getClientId().equals(auth.getAuthorizationRequest().getClientId())) {
+		if (client != null && client.getClientId().equals(auth.getOAuth2Request().getClientId())) {
 
 			clientService.deleteClient(client);
 
-			// send it all out to the view
-			m.addAttribute("client", client);
 			m.addAttribute("code", HttpStatus.NO_CONTENT); // http 204
 
 			return "httpCodeView";
 		} else {
 			// client mismatch
 			logger.error("readClientConfiguration failed, client ID mismatch: "
-					+ clientId + " and " + auth.getAuthorizationRequest().getClientId() + " do not match.");
+					+ clientId + " and " + auth.getOAuth2Request().getClientId() + " do not match.");
 			m.addAttribute("code", HttpStatus.FORBIDDEN); // http 403
 
 			return "httpCodeView";
 		}
 	}
-
 
 
 
@@ -342,14 +351,42 @@ public class ClientDynamicRegistrationEndpoint {
 	 * @throws AuthenticationException
 	 */
 	private OAuth2AccessTokenEntity createRegistrationAccessToken(ClientDetailsEntity client) throws AuthenticationException {
-		// create a registration access token, treat it like a client credentials flow
-		// I can't use the auth request interface here because it has no setters and bad constructors -- THIS IS BAD API DESIGN
-		DefaultAuthorizationRequest authorizationRequest = new DefaultAuthorizationRequest(client.getClientId(), Sets.newHashSet(OAuth2AccessTokenEntity.REGISTRATION_TOKEN_SCOPE));
-		authorizationRequest.setApproved(true);
-		authorizationRequest.setAuthorities(Sets.newHashSet(new SimpleGrantedAuthority("ROLE_CLIENT")));
-		OAuth2Authentication authentication = new OAuth2Authentication(authorizationRequest, null);
-		OAuth2AccessTokenEntity registrationAccessToken = (OAuth2AccessTokenEntity) tokenService.createAccessToken(authentication);
-		return registrationAccessToken;
+
+		Map<String, String> authorizationParameters = Maps.newHashMap();
+		OAuth2Request clientAuth = new OAuth2Request(authorizationParameters, client.getClientId(),
+				Sets.newHashSet(new SimpleGrantedAuthority("ROLE_CLIENT")), true,
+				Sets.newHashSet(OAuth2AccessTokenEntity.REGISTRATION_TOKEN_SCOPE), null, null, null);
+		OAuth2Authentication authentication = new OAuth2Authentication(clientAuth, null);
+
+		OAuth2AccessTokenEntity token = new OAuth2AccessTokenEntity();
+		token.setClient(client);
+		token.setScope(Sets.newHashSet(OAuth2AccessTokenEntity.REGISTRATION_TOKEN_SCOPE));
+
+		AuthenticationHolderEntity authHolder = new AuthenticationHolderEntity();
+		authHolder.setAuthentication(authentication);
+		authHolder = authenticationHolderRepository.save(authHolder);
+		token.setAuthenticationHolder(authHolder);
+
+		JWTClaimsSet claims = new JWTClaimsSet();
+
+		claims.setAudience(Lists.newArrayList(client.getClientId()));
+		claims.setIssuer(configBean.getIssuer());
+		claims.setIssueTime(new Date());
+		claims.setExpirationTime(token.getExpiration());
+		claims.setJWTID(UUID.randomUUID().toString()); // set a random NONCE in the middle of it
+
+		// TODO: use client's default signing algorithm
+		JWSAlgorithm signingAlg = jwtService.getDefaultSigningAlgorithm();
+		SignedJWT signed = new SignedJWT(new JWSHeader(signingAlg), claims);
+
+		jwtService.signJwt(signed);
+
+		token.setJwt(signed);
+
+		tokenService.saveAccessToken(token);
+
+		return token;
+		
 	}
 
 }

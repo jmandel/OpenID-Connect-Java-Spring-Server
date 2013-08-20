@@ -1,6 +1,6 @@
-<%@attribute name="title" required="false" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@attribute name="title" required="false"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -113,12 +113,15 @@
 
 <body>
 
-<div id="modalAlert" class="modal hide fade">
-	<div class="alert alert-error">
-		<strong>Warning!</strong>
-		<div class="modal-body"></div>
+	<div id="modalAlert" class="modal hide fade">
+		<div class="alert alert-error">
+			<strong>Warning!</strong>
+			<div class="modal-body"></div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn primary" type="button"
+				onclick="$('#modalAlert').modal('hide');">OK</button>
+		</div>
 	</div>
-	<div class="modal-footer"><button class="btn primary" type="button" onclick="$('#modalAlert').modal('hide');">OK</button></div>
-</div>
 
 <div id="wrap">

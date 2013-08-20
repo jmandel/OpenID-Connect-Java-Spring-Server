@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS access_token (
 	refresh_token_id BIGINT,
 	client_id VARCHAR(256),
 	auth_holder_id BIGINT,
-	id_token_id BIGINT
+	id_token_id BIGINT,
+	approved_site_id BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS address (
@@ -52,7 +53,7 @@ CREATE TABLE IF NOT EXISTS client_authority (
 CREATE TABLE IF NOT EXISTS authorization_code (
 	id BIGINT AUTO_INCREMENT PRIMARY KEY,
 	code VARCHAR(256),
-	authorization_request_holder LONGBLOB
+	authentication LONGBLOB
 );
 
 CREATE TABLE IF NOT EXISTS client_grant_type (
@@ -77,7 +78,7 @@ CREATE TABLE IF NOT EXISTS client_details (
 	reuse_refresh_tokens BOOLEAN NOT NULL DEFAULT 1,
 	dynamically_registered BOOLEAN NOT NULL DEFAULT 0,
 	allow_introspection BOOLEAN NOT NULL DEFAULT 0,
-	id_token_validity_seconds BIGINT,
+	id_token_validity_seconds BIGINT NOT NULL DEFAULT 600,
 	
 	client_id VARCHAR(256),
 	client_secret VARCHAR(2048),
@@ -124,23 +125,9 @@ CREATE TABLE IF NOT EXISTS client_default_acr_value (
 	default_acr_value VARCHAR(2000)
 );
 
-CREATE TABLE IF NOT EXISTS client_nonce ( 
-	id BIGINT AUTO_INCREMENT PRIMARY KEY,
-	value VARCHAR(256),
-	client_id VARCHAR(256),
-	use_date TIMESTAMP NULL,
-	expire_date TIMESTAMP NULL
-);
-
 CREATE TABLE IF NOT EXISTS client_contact (
 	owner_id BIGINT,
 	contact VARCHAR(256)
-);
-
-CREATE TABLE IF NOT EXISTS event (
-	id BIGINT AUTO_INCREMENT PRIMARY KEY,
-	type INT(3),
-	timestamp DATE
 );
 
 CREATE TABLE IF NOT EXISTS client_redirect_uri (

@@ -27,25 +27,20 @@ import net.minidev.json.JSONObject;
 
 import org.mitre.jwt.signer.service.JwtSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetSigningAndValidationServiceCacheService;
-import org.mitre.oauth2.exception.NonceReuseException;
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.SystemScopeService;
-import org.mitre.openid.connect.model.Nonce;
-import org.mitre.openid.connect.service.NonceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
-import org.springframework.security.oauth2.provider.AuthorizationRequestManager;
 import org.springframework.security.oauth2.provider.ClientDetails;
-import org.springframework.security.oauth2.provider.DefaultAuthorizationRequest;
+import org.springframework.security.oauth2.provider.DefaultOAuth2RequestFactory;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Component;
 
 import com.google.common.base.Joiner;
@@ -55,15 +50,11 @@ import com.google.common.collect.Iterables;
 import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.SignedJWT;
 
-@Component("authorizationRequestManager")
-public class ConnectAuthorizationRequestManager implements AuthorizationRequestManager {
+@Component("connectOAuth2RequestFactory")
+public class ConnectOAuth2RequestFactory extends DefaultOAuth2RequestFactory {
 
-	private static Logger logger = LoggerFactory.getLogger(ConnectAuthorizationRequestManager.class);
+	private static Logger logger = LoggerFactory.getLogger(ConnectOAuth2RequestFactory.class);
 
-	@Autowired
-	private NonceService nonceService;
-
-	@Autowired
 	private ClientDetailsEntityService clientDetailsService;
 
 	@Autowired
@@ -78,61 +69,46 @@ public class ConnectAuthorizationRequestManager implements AuthorizationRequestM
 	 * @param clientDetailsService
 	 * @param nonceService
 	 */
-	public ConnectAuthorizationRequestManager(ClientDetailsEntityService clientDetailsService, NonceService nonceService) {
+	@Autowired
+	public ConnectOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService) {
+		super(clientDetailsService);
 		this.clientDetailsService = clientDetailsService;
-		this.nonceService = nonceService;
 	}
 
-	/**
-	 * Default empty constructor
-	 */
-	public ConnectAuthorizationRequestManager() {
-
+	@Override
+	public OAuth2Request createOAuth2Request(AuthorizationRequest request) {
+		return new OAuth2Request(request.getRequestParameters(), request.getClientId(), request.getAuthorities(), 
+				request.isApproved(), request.getScope(), request.getResourceIds(), request.getRedirectUri(), request.getExtensions());
 	}
-
+	
 	@Override
 	public AuthorizationRequest createAuthorizationRequest(Map<String, String> inputParams) {
 
 		Map<String, String> parameters = processRequestObject(inputParams);
 
 		String clientId = parameters.get("client_id");
-		if (clientId == null) {
-			throw new InvalidClientException("A client id must be provided");
+		ClientDetails client = null;
+
+		if (clientId != null) {
+			client = clientDetailsService.loadClientByClientId(clientId);
 		}
-		ClientDetails client = clientDetailsService.loadClientByClientId(clientId);
 
-		String requestNonce = parameters.get("nonce");
-
-		//Only process if the user is authenticated. If the user is not authenticated yet, this
-		//code will be called a second time once the user is redirected from the login page back
-		//to the auth endpoint.
-		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-		if (requestNonce != null && principal != null && principal instanceof User) {
-
-			if (!nonceService.alreadyUsed(clientId, requestNonce)) {
-				Nonce nonce = nonceService.create(clientId, requestNonce);
-				nonceService.save(nonce);
-			}
-			else {
-				throw new NonceReuseException(client.getClientId(), requestNonce);
-			}
-
-		}
+		AuthorizationRequest request = new AuthorizationRequest(parameters, Collections.<String, String> emptyMap(),
+				parameters.get(OAuth2Utils.CLIENT_ID),
+				OAuth2Utils.parseParameterList(parameters.get(OAuth2Utils.SCOPE)), null,
+				null, false, parameters.get(OAuth2Utils.STATE),
+				parameters.get(OAuth2Utils.REDIRECT_URI),
+				OAuth2Utils.parseParameterList(parameters.get(OAuth2Utils.RESPONSE_TYPE)));
 
 		Set<String> scopes = OAuth2Utils.parseParameterList(parameters.get("scope"));
-		if ((scopes == null || scopes.isEmpty())) {
-			//TODO: do we want to allow default scoping at all?
+		if ((scopes == null || scopes.isEmpty()) && client != null) {
 			Set<String> clientScopes = client.getScope();
 			scopes = clientScopes;
 		}
 
+		request.setScope(scopes);
 
-		// note that we have to inject the processed parameters in at this point so that SECOAUTH can find them later (and this object will get copy-constructored away anyway)
-		DefaultAuthorizationRequest request = new DefaultAuthorizationRequest(parameters, Collections.<String, String> emptyMap(), clientId, scopes);
-		request.addClientDetails(client);
 		return request;
-
 	}
 
 	/**
@@ -237,28 +213,10 @@ public class ConnectAuthorizationRequestManager implements AuthorizationRequestM
 					parameters.put("scope", scope);
 				}
 			}
-
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("ParseException while parsing RequestObject:", e);
 		}
 		return parameters;
-	}
-
-	@Override
-	public void validateParameters(Map<String, String> parameters, ClientDetails clientDetails) {
-		if (parameters.containsKey("scope")) {
-			if (clientDetails.isScoped()) {
-				Set<String> validScope = clientDetails.getScope();
-				for (String scope : OAuth2Utils.parseParameterList(parameters.get("scope"))) {
-					
-					String baseScope = systemScopes.baseScopeString(scope);
-					if (!validScope.contains(baseScope)) {	
-						throw new InvalidScopeException("Invalid scope: " + scope, validScope);
-					}
-				}
-			}
-		}
 	}
 
 }

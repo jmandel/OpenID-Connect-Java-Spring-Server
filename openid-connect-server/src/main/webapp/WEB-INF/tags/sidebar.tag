@@ -1,5 +1,5 @@
-<%@ taglib prefix="security" uri="http://www.springframework.org/security/tags" %>
-<%@ taglib prefix="o" tagdir="/WEB-INF/tags" %>
+<%@ taglib prefix="security" uri="http://www.springframework.org/security/tags"%>
+<%@ taglib prefix="o" tagdir="/WEB-INF/tags"%>
 
 <div class="span2 visible-desktop">
 

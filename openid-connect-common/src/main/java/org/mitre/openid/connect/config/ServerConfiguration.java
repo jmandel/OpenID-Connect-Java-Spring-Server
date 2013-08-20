@@ -39,6 +39,8 @@ public class ServerConfiguration {
 
 	private String userInfoUri;
 
+	private String introspectionEndpointUri;
+
 	/**
 	 * @return the authorizationEndpointUri
 	 */
@@ -123,6 +125,20 @@ public class ServerConfiguration {
 		this.registrationEndpointUri = registrationEndpointUri;
 	}
 
+	/**
+	 * @return the introspectionEndpointUri
+	 */
+	public String getIntrospectionEndpointUri() {
+		return introspectionEndpointUri;
+	}
+
+	/**
+	 * @param introspectionEndpointUri the introspectionEndpointUri to set
+	 */
+	public void setIntrospectionEndpointUri(String introspectionEndpointUri) {
+		this.introspectionEndpointUri = introspectionEndpointUri;
+	}
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */
@@ -131,6 +147,7 @@ public class ServerConfiguration {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((authorizationEndpointUri == null) ? 0 : authorizationEndpointUri.hashCode());
+		result = prime * result + ((introspectionEndpointUri == null) ? 0 : introspectionEndpointUri.hashCode());
 		result = prime * result + ((issuer == null) ? 0 : issuer.hashCode());
 		result = prime * result + ((jwksUri == null) ? 0 : jwksUri.hashCode());
 		result = prime * result + ((registrationEndpointUri == null) ? 0 : registrationEndpointUri.hashCode());
@@ -150,7 +167,7 @@ public class ServerConfiguration {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
+		if (!(obj instanceof ServerConfiguration)) {
 			return false;
 		}
 		ServerConfiguration other = (ServerConfiguration) obj;
@@ -159,6 +176,13 @@ public class ServerConfiguration {
 				return false;
 			}
 		} else if (!authorizationEndpointUri.equals(other.authorizationEndpointUri)) {
+			return false;
+		}
+		if (introspectionEndpointUri == null) {
+			if (other.introspectionEndpointUri != null) {
+				return false;
+			}
+		} else if (!introspectionEndpointUri.equals(other.introspectionEndpointUri)) {
 			return false;
 		}
 		if (issuer == null) {

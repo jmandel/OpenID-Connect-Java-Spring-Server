@@ -17,49 +17,19 @@
 /**
  * 
  */
-package org.mitre.oauth2.exception;
+package org.mitre.oauth2.introspectingfilter;
 
 /**
- * @author AANGANES
+ * @author jricher
  *
  */
-public class PermissionDeniedException extends RuntimeException {
+public interface IntrospectionUrlProvider {
 
 	/**
-	 * 
+	 * Get the introspection URL based on the access token.
+	 * @param accessToken
+	 * @return
 	 */
-	private static final long serialVersionUID = 1L;
-
-	/**
-	 * 
-	 */
-	public PermissionDeniedException() {
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param message
-	 */
-	public PermissionDeniedException(String message) {
-		super(message);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param cause
-	 */
-	public PermissionDeniedException(Throwable cause) {
-		super(cause);
-		// TODO Auto-generated constructor stub
-	}
-
-	/**
-	 * @param message
-	 * @param cause
-	 */
-	public PermissionDeniedException(String message, Throwable cause) {
-		super(message, cause);
-		// TODO Auto-generated constructor stub
-	}
+	public String getIntrospectionUrl(String accessToken);
 
 }

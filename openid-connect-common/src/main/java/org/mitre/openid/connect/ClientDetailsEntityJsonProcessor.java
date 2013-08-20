@@ -29,7 +29,6 @@ import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.ClientDetailsEntity.AppType;
 import org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod;
 import org.mitre.oauth2.model.ClientDetailsEntity.SubjectType;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.RegisteredClient;
 
 import com.google.common.base.Joiner;
@@ -91,6 +90,7 @@ public class ClientDetailsEntityJsonProcessor {
 			}
 
 			c.setGrantTypes(getAsStringSet(o, "grant_types"));
+			c.setResponseTypes(getAsStringSet(o, "response_types"));
 			c.setPolicyUri(getAsString(o, "policy_uri"));
 			c.setJwksUri(getAsString(o, "jwks_uri"));
 
@@ -145,8 +145,8 @@ public class ClientDetailsEntityJsonProcessor {
 	 * Parse the JSON as a RegisteredClient (useful in the dynamic client filter)
 	 */
 	public static RegisteredClient parseRegistered(String jsonString) {
-		
-		
+
+
 		JsonElement jsonEl = parser.parse(jsonString);
 		if (jsonEl.isJsonObject()) {
 
@@ -165,7 +165,7 @@ public class ClientDetailsEntityJsonProcessor {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * @param c
 	 * @param token
@@ -178,7 +178,7 @@ public class ClientDetailsEntityJsonProcessor {
 		o.addProperty("client_id", c.getClientId());
 		if (c.getClientSecret() != null) {
 			o.addProperty("client_secret", c.getClientSecret());
-			
+
 			if (c.getClientSecretExpiresAt() == null) {
 				o.addProperty("client_secret_expires_at", 0); // TODO: do we want to let secrets expire?
 			} else {
@@ -212,6 +212,7 @@ public class ClientDetailsEntityJsonProcessor {
 		o.addProperty("token_endpoint_auth_method", c.getTokenEndpointAuthMethod() != null ? c.getTokenEndpointAuthMethod().getValue() : null);
 		o.addProperty("scope", c.getScope() != null ? Joiner.on(" ").join(c.getScope()) : null);
 		o.add("grant_types", getAsArray(c.getGrantTypes()));
+		o.add("response_types", getAsArray(c.getResponseTypes()));
 		o.addProperty("policy_uri", c.getPolicyUri());
 		o.addProperty("jwks_uri", c.getJwksUri());
 
@@ -302,7 +303,7 @@ public class ClientDetailsEntityJsonProcessor {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Gets the value of the given given member as a set of strings, null if it doesn't exist
 	 */
@@ -313,8 +314,8 @@ public class ClientDetailsEntityJsonProcessor {
 			return null;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Translate a set of strings to a JSON array
 	 * @param value

@@ -69,12 +69,9 @@ public class PreregistrationAuthenticationProvider implements AuthenticationProv
 			throws AuthenticationException {
 
 		PreregistrationToken p = (PreregistrationToken) authentication;
+	
+		String raw = p.getOAuth2Request().getRequestParameters().get("accessToken");
 		
-		
-		String raw = p.getAuthorizationRequest().getAuthorizationParameters().get("accessToken");
-		
-		logger.debug( p.getAuthorizationRequest().toString());
-		logger.debug(p.getAuthorizationRequest().getApprovalParameters().toString());
 		logger.debug("auth providr making its auth'd tok on raw: " + raw);
 		
 		SignedJWT parsed;

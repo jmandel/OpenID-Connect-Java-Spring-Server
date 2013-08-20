@@ -23,20 +23,14 @@
     <parent>
     	<groupId>org.mitre</groupId>
     	<artifactId>openid-connect-parent</artifactId>
-    	<version>1.0.2-SNAPSHOT</version>
+    	<version>1.1.0-SNAPSHOT</version>
     	<relativePath>..</relativePath>
     </parent>
     <dependencies>
 		<dependency>
 			<groupId>org.mitre</groupId>
 			<artifactId>openid-connect-common</artifactId>
-			<version>1.0.2-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>1.9.0</version>
-			<scope>test</scope>
+			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
     <description>Reference implementation of OpenID Connect spec (http://openid.net/connect/).

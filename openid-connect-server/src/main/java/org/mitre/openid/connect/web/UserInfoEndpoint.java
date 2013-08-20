@@ -30,6 +30,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.google.common.base.Strings;
 
 /**
  * OpenID Connect UserInfo endpoint, as specified in Standard sec 5 and Messages sec 2.4.
@@ -50,8 +53,8 @@ public class UserInfoEndpoint {
 	 */
 	@PreAuthorize("hasRole('ROLE_USER') and #oauth2.hasScope('openid')")
 	@RequestMapping(value="/userinfo", method= {RequestMethod.GET, RequestMethod.POST}, produces = "application/json")
-	public String getInfo(Principal p, Model model) {
-		
+	public String getInfo(@RequestParam(value="claims", required=false) String claimsRequestJsonString, Principal p, Model model) {
+
 		if (p == null) {
 			logger.error("getInfo failed; no principal. Requester is not authorized.");
 			model.addAttribute("code", HttpStatus.FORBIDDEN);
@@ -66,12 +69,16 @@ public class UserInfoEndpoint {
 			model.addAttribute("code", HttpStatus.NOT_FOUND);
 			return "httpCodeView";
 		}
+		
+		if (!Strings.isNullOrEmpty(claimsRequestJsonString)) {
+			model.addAttribute("claimsRequest", claimsRequestJsonString);
+		}
 
 		if (p instanceof OAuth2Authentication) {
 			OAuth2Authentication authentication = (OAuth2Authentication)p;
 
-			model.addAttribute("scope", authentication.getAuthorizationRequest().getScope());
-			model.addAttribute("requestObject", authentication.getAuthorizationRequest().getAuthorizationParameters().get("request"));
+			model.addAttribute("scope", authentication.getOAuth2Request().getScope());
+			model.addAttribute("requestObject", authentication.getOAuth2Request().getRequestParameters().get("request"));
 		}
 
 		model.addAttribute("userInfo", userInfo);

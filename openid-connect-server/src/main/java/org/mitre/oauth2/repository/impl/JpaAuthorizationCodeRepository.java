@@ -27,7 +27,7 @@ import org.mitre.oauth2.model.AuthorizationCodeEntity;
 import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.mitre.util.jpa.JpaUtil;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
-import org.springframework.security.oauth2.provider.code.AuthorizationRequestHolder;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +60,7 @@ public class JpaAuthorizationCodeRepository implements AuthorizationCodeReposito
 	 */
 	@Override
 	@Transactional
-	public AuthorizationRequestHolder consume(String code) throws InvalidGrantException {
+	public OAuth2Authentication consume(String code) throws InvalidGrantException {
 
 		TypedQuery<AuthorizationCodeEntity> query = manager.createNamedQuery("AuthorizationCodeEntity.getByValue", AuthorizationCodeEntity.class);
 		query.setParameter("code", code);
@@ -71,7 +71,7 @@ public class JpaAuthorizationCodeRepository implements AuthorizationCodeReposito
 			throw new InvalidGrantException("JpaAuthorizationCodeRepository: no authorization code found for value " + code);
 		}
 
-		AuthorizationRequestHolder authRequest = result.getAuthorizationRequestHolder();
+		OAuth2Authentication authRequest = result.getAuthentication();
 
 		manager.remove(result);
 

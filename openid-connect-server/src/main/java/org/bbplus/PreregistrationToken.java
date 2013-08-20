@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
-import org.springframework.security.oauth2.provider.DefaultAuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 
 import com.google.gson.JsonObject;
 import com.nimbusds.jwt.SignedJWT;
@@ -41,16 +41,16 @@ public class PreregistrationToken extends OAuth2Authentication {
 	private JsonObject clientDefinitionFromTrustedRegistry;
 	private SignedJWT jwt;
 	
-	public PreregistrationToken(AuthorizationRequest authorizationRequest,
+	public PreregistrationToken(OAuth2Request authorizationRequest,
 			Authentication userAuthentication) {
 		super(authorizationRequest, userAuthentication);
 	}
 
-	public static AuthorizationRequest emptyReq(String subject, boolean approved){
+	public static OAuth2Request emptyReq(String subject, boolean approved){
 		Collection<String> scopes = new HashSet<String>();
-		DefaultAuthorizationRequest ret = new DefaultAuthorizationRequest(subject, scopes);
-		ret.setApproved(true);
-		return ret;
+		AuthorizationRequest req = new AuthorizationRequest(subject, scopes);
+		req.setApproved(true);
+		return req.createOAuth2Request();
 	}
 	
 	public PreregistrationToken(JsonObject clientDefinition) {

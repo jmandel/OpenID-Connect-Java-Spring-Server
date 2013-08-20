@@ -256,6 +256,4 @@ public class SystemScope {
 		return "SystemScope [value=" + value + ", description=" + description + ", icon=" + icon + ", allowDynReg=" + allowDynReg + ", defaultScope=" + defaultScope  + ", isStructured=" + structured + "]";
 	}
 
-
-
 }

@@ -19,6 +19,8 @@
  */
 package org.mitre.openid.connect.client.service.impl;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.http.client.HttpClient;
@@ -28,6 +30,7 @@ import org.mitre.openid.connect.config.ServerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.web.client.RestTemplate;
 
 import com.google.common.cache.CacheBuilder;
@@ -51,14 +54,54 @@ public class DynamicServerConfigurationService implements ServerConfigurationSer
 	// map of issuer -> server configuration, loaded dynamically from service discovery
 	private LoadingCache<String, ServerConfiguration> servers;
 
+	private Set<String> whitelist = new HashSet<String>();
+	private Set<String> blacklist = new HashSet<String>();
+
 	public DynamicServerConfigurationService() {
 		// initialize the cache
 		servers = CacheBuilder.newBuilder().build(new OpenIDConnectServiceConfigurationFetcher());
 	}
 
+	/**
+	 * @return the whitelist
+	 */
+	public Set<String> getWhitelist() {
+		return whitelist;
+	}
+
+	/**
+	 * @param whitelist the whitelist to set
+	 */
+	public void setWhitelist(Set<String> whitelist) {
+		this.whitelist = whitelist;
+	}
+
+	/**
+	 * @return the blacklist
+	 */
+	public Set<String> getBlacklist() {
+		return blacklist;
+	}
+
+	/**
+	 * @param blacklist the blacklist to set
+	 */
+	public void setBlacklist(Set<String> blacklist) {
+		this.blacklist = blacklist;
+	}
+
 	@Override
 	public ServerConfiguration getServerConfiguration(String issuer) {
 		try {
+
+			if (!whitelist.isEmpty() && !whitelist.contains(issuer)) {
+				throw new AuthenticationServiceException("Whitelist was nonempty, issuer was not in whitelist: " + issuer);
+			}
+
+			if (blacklist.contains(issuer)) {
+				throw new AuthenticationServiceException("Issuer was in blacklist: " + issuer);
+			}
+
 			return servers.get(issuer);
 		} catch (ExecutionException e) {
 			logger.warn("Couldn't load configuration for " + issuer, e);
@@ -95,16 +138,34 @@ public class DynamicServerConfigurationService implements ServerConfigurationSer
 				JsonObject o = parsed.getAsJsonObject();
 
 				// sanity checks
+				if (!o.has("issuer")) {
+					throw new IllegalStateException("Returned object did not have an 'issuer' field");
+				}
+
 				if (!issuer.equals(o.get("issuer").getAsString())) {
 					throw new IllegalStateException("Discovered issuers didn't match, expected " + issuer + " got " + o.get("issuer").getAsString());
 				}
 
 				conf.setIssuer(o.get("issuer").getAsString());
-				conf.setAuthorizationEndpointUri(o.get("authorization_endpoint").getAsString());
-				conf.setTokenEndpointUri(o.get("token_endpoint").getAsString());
-				conf.setJwksUri(o.get("jwks_uri").getAsString());
-				conf.setUserInfoUri(o.get("userinfo_endpoint").getAsString());
-				conf.setRegistrationEndpointUri(o.get("registration_endpoint").getAsString());
+
+				if (o.has("authorization_endpoint")) {
+					conf.setAuthorizationEndpointUri(o.get("authorization_endpoint").getAsString());
+				}
+				if (o.has("token_endpoint")) {
+					conf.setTokenEndpointUri(o.get("token_endpoint").getAsString());
+				}
+				if (o.has("jwks_uri")) {
+					conf.setJwksUri(o.get("jwks_uri").getAsString());
+				}
+				if (o.has("userinfo_endpoint")) {
+					conf.setUserInfoUri(o.get("userinfo_endpoint").getAsString());
+				}
+				if (o.has("registration_endpoint")) {
+					conf.setRegistrationEndpointUri(o.get("registration_endpoint").getAsString());
+				}
+				if (o.has("introspection_endpoint")) {
+					conf.setIntrospectionEndpointUri(o.get("introspection_endpoint").getAsString());
+				}
 
 				return conf;
 			} else {

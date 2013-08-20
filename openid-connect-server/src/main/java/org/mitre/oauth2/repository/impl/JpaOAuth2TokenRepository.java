@@ -16,7 +16,9 @@
  ******************************************************************************/
 package org.mitre.oauth2.repository.impl;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -36,6 +38,19 @@ public class JpaOAuth2TokenRepository implements OAuth2TokenRepository {
 
 	@PersistenceContext
 	private EntityManager manager;
+
+	@Override
+	public Set<OAuth2AccessTokenEntity> getAllAccessTokens() {
+		TypedQuery<OAuth2AccessTokenEntity> query = manager.createNamedQuery("OAuth2AccessTokenEntity.getAll", OAuth2AccessTokenEntity.class);
+		return new LinkedHashSet<OAuth2AccessTokenEntity>(query.getResultList());
+	}
+
+	@Override
+	public Set<OAuth2RefreshTokenEntity> getAllRefreshTokens() {
+		TypedQuery<OAuth2RefreshTokenEntity> query = manager.createNamedQuery("OAuth2RefreshTokenEntity.getAll", OAuth2RefreshTokenEntity.class);
+		return new LinkedHashSet<OAuth2RefreshTokenEntity>(query.getResultList());
+	}
+
 
 	@Override
 	public OAuth2AccessTokenEntity getAccessTokenByValue(String accessTokenValue) {
@@ -141,26 +156,6 @@ public class JpaOAuth2TokenRepository implements OAuth2TokenRepository {
 	public List<OAuth2RefreshTokenEntity> getRefreshTokensForClient(ClientDetailsEntity client) {
 		TypedQuery<OAuth2RefreshTokenEntity> queryR = manager.createNamedQuery("OAuth2RefreshTokenEntity.getByClient", OAuth2RefreshTokenEntity.class);
 		queryR.setParameter("client", client);
-		List<OAuth2RefreshTokenEntity> refreshTokens = queryR.getResultList();
-		return refreshTokens;
-	}
-
-	/* (non-Javadoc)
-	 * @see org.mitre.oauth2.repository.OAuth2TokenRepository#getExpiredAccessTokens()
-	 */
-	@Override
-	public List<OAuth2AccessTokenEntity> getExpiredAccessTokens() {
-		TypedQuery<OAuth2AccessTokenEntity> queryA = manager.createNamedQuery("OAuth2AccessTokenEntity.getExpired", OAuth2AccessTokenEntity.class);
-		List<OAuth2AccessTokenEntity> accessTokens = queryA.getResultList();
-		return accessTokens;
-	}
-
-	/* (non-Javadoc)
-	 * @see org.mitre.oauth2.repository.OAuth2TokenRepository#getExpiredRefreshTokens()
-	 */
-	@Override
-	public List<OAuth2RefreshTokenEntity> getExpiredRefreshTokens() {
-		TypedQuery<OAuth2RefreshTokenEntity> queryR = manager.createNamedQuery("OAuth2RefreshTokenEntity.getExpired", OAuth2RefreshTokenEntity.class);
 		List<OAuth2RefreshTokenEntity> refreshTokens = queryR.getResultList();
 		return refreshTokens;
 	}

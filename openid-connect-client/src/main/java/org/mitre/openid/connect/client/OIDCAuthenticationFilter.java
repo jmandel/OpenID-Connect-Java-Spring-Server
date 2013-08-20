@@ -38,6 +38,7 @@ import org.mitre.openid.connect.client.service.ClientConfigurationService;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
 import org.mitre.openid.connect.config.ServerConfiguration;
+import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
@@ -59,7 +60,7 @@ import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.ReadOnlyJWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
-import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.SECRET_BASIC;
+import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.*;
 
 /**
  * OpenID Connect Authentication Filter class
@@ -184,7 +185,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 				throw new AuthenticationServiceException("No client configuration found for issuer: " + issuer);
 			}
 
-			String redirectUri = null; 
+			String redirectUri = null;
 			if (clientConfig.getRegisteredRedirectUri() != null && clientConfig.getRegisteredRedirectUri().size() == 1) {
 				// if there's a redirect uri configured (and only one), use that
 				redirectUri = clientConfig.getRegisteredRedirectUri().toArray(new String[] {})[0];
@@ -402,8 +403,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 				}
 
 				// compare the nonce to our stored claim
-				// TODO: Nimbus claims as strings?
-				String nonce = (String) idClaims.getCustomClaim("nonce");
+				String nonce = idClaims.getStringClaim("nonce");
 				if (Strings.isNullOrEmpty(nonce)) {
 
 					logger.error("ID token did not contain a nonce claim.");

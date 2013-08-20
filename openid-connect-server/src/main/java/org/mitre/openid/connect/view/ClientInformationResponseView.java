@@ -26,10 +26,10 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
-import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.ClientDetailsEntityJsonProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.view.AbstractView;
@@ -49,6 +49,8 @@ import com.google.gson.JsonObject;
 @Component("clientInformationResponseView")
 public class ClientInformationResponseView extends AbstractView {
 
+	private static Logger logger = LoggerFactory.getLogger(ClientInformationResponseView.class);
+
 	// note that this won't serialize nulls by default
 	private Gson gson = new Gson();
 
@@ -63,7 +65,7 @@ public class ClientInformationResponseView extends AbstractView {
 		RegisteredClient c = (RegisteredClient) model.get("client");
 		//OAuth2AccessTokenEntity token = (OAuth2AccessTokenEntity) model.get("token");
 		//String uri = (String)model.get("uri"); //request.getRequestURL() + "/" + c.getClientId();
-		
+
 		HttpStatus code = (HttpStatus) model.get("code");
 		if (code == null) {
 			code = HttpStatus.OK;
@@ -75,11 +77,13 @@ public class ClientInformationResponseView extends AbstractView {
 			Writer out = response.getWriter();
 			gson.toJson(o, out);
 		} catch (JsonIOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+			logger.error("JsonIOException in ClientInformationResponseView.java: ", e);
+
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+			logger.error("IOException in ClientInformationResponseView.java: ", e);
+
 		}
 
 	}

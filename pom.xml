@@ -1,10 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2013 The MITRE Corporation 
+    and the MIT Kerberos and Internet Trust Consortium
+  
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+    http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.mitre</groupId>
     <artifactId>openid-connect-parent</artifactId>
+    <version>1.1.0-SNAPSHOT</version>        
     <name>MITREid Connect</name>
-    <version>1.0.2-SNAPSHOT</version>        
     <packaging>pom</packaging>
   <parent>
     <groupId>org.sonatype.oss</groupId>
@@ -22,7 +38,7 @@
     <modules>
     	<module>openid-connect-common</module>
     	<module>openid-connect-client</module>
-	<module>openid-connect-server</module>
+		<module>openid-connect-server</module>
     </modules>
     
 	<scm>
@@ -45,14 +61,21 @@
 		</developer>
 	</developers>
 
+	<mailingLists>
+		<mailingList>
+			<archive>https://mailman.mit.edu/mailman/listinfo/mitreid-connect</archive>
+			<name>MITREid Connect Mailing List</name>
+			<post>mitreid-connect@mit.edu</post>
+		</mailingList>
+	</mailingLists>
+
     <properties>
         <java-version>1.6</java-version>
-        <org.springframework-version>3.1.3.RELEASE</org.springframework-version>
+        <org.springframework-version>3.2.3.RELEASE</org.springframework-version>
         <org.slf4j-version>1.5.10</org.slf4j-version>
-        <spring.security.version>3.1.0.RELEASE</spring.security.version>
+        <spring.security.version>3.1.4.RELEASE</spring.security.version>
     </properties>
-    <description>Reference implementation of OpenID Connect spec (http://openid.net/connect/).
-    </description>
+    <description>A reference implementation of OpenID Connect (http://openid.net/connect/) and OAuth 2.0 built on top of Java, Spring, and Spring Security. The project contains a fully functioning server, client, and utility library.</description>
     <url>https://github.com/mitreid-connect</url>
     <build>
     	<pluginManagement>
@@ -364,13 +387,13 @@
         </dependency>
     	<dependency>
       		<groupId>org.springframework.security.oauth</groupId>
-      		<version>1.0.5.RELEASE</version>
+ 		 	<version>1.1.0.M1</version>
       		<artifactId>spring-security-oauth2</artifactId>
-	</dependency>
+		</dependency>
         <dependency>
         	<groupId>com.nimbusds</groupId>
         	<artifactId>nimbus-jose-jwt</artifactId>
-        	<version>2.15.2</version>
+        	<version>2.17.2</version>
         </dependency>
 		<dependency>
 			<groupId>org.hsqldb</groupId>
@@ -387,6 +410,12 @@
 		    <artifactId>joda-convert</artifactId>
 		    <version>1.3</version>
 		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.9.0</version>
+			<scope>test</scope>
+		</dependency>
     </dependencies>
     <repositories>
         <repository>
@@ -397,11 +426,11 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
-	<repository>
-	    <id>spring-release</id>
-	    <name>Spring Maven Release Repository</name>
-	    <url>http://maven.springframework.org/release</url>
-	</repository>
+		<repository>
+		    <id>spring-milestone</id>
+		    <name>Spring Maven MILESTONE Repository</name>
+		    <url>http://maven.springframework.org/milestone</url>
+		</repository>
     </repositories>
     
     <issueManagement>
@@ -429,6 +458,24 @@
 	                <overview>${basedir}/src/main/javadoc/overview.html</overview>
 	            </configuration>  
 	        </plugin>
+	        <plugin>
+        		<groupId>org.apache.maven.plugins</groupId>
+        		<artifactId>maven-checkstyle-plugin</artifactId>
+        		<version>2.10</version>
+        		<configuration>
+        			<configLocation>checkstyle.xml</configLocation>
+        		</configuration>
+      		</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <junitArtifactName>junit:junit</junitArtifactName>
+                    <excludes>
+                        <exclude>**/*_Roo_*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
 		</plugins>
     </reporting>
 

@@ -303,6 +303,12 @@ var BlackListWidgetView = ListWidgetView.extend({
 	
 });
 
+// Stats table
+
+var StatsModel = Backbone.Model.extend({
+	url: "api/stats/byclientid"
+});
+
 // Router
 var AppRouter = Backbone.Router.extend({
 
@@ -340,8 +346,10 @@ var AppRouter = Backbone.Router.extend({
         this.blackListList = new BlackListCollection();
         this.approvedSiteList = new ApprovedSiteCollection();
         this.systemScopeList = new SystemScopeCollection();
+        this.clientStats = new StatsModel(); 
 
-        this.clientListView = new ClientListView({model:this.clientList});
+        
+        this.clientListView = new ClientListView({model:this.clientList, stats: this.clientStats});
         this.whiteListListView = new WhiteListListView({model:this.whiteListList});
         this.approvedSiteListView = new ApprovedSiteListView({model:this.approvedSiteList});
         this.blackListListView = new BlackListListView({model:this.blackListList});
@@ -353,25 +361,45 @@ var AppRouter = Backbone.Router.extend({
 
         this.breadCrumbView.render();
 
+
         //
         // Several items depend on the clients and whitelists being loaded, so we're going to pre-fetch them here
         // and not start the app router until they're loaded.
         //
         
         // load things in the right order:
-        this.systemScopeList.fetch({
-        	success: function(collection, response) {
-        		app.clientList.fetch({
-        			success: function(collection, response) {
-        				app.whiteListList.fetch({
-        					success: function(collection, response) {
-        						var baseUrl = $.url($('base').attr('href'));                
-        						Backbone.history.start({pushState: true, root: baseUrl.attr('relative') + 'manage/'});
-        					}
-        				});
-        			}
-        		});
-        	}
+        $("#loading").html("server configuration");
+        var base = $('base').attr('href');
+        $.getJSON(base + '.well-known/openid-configuration', function(data) {
+        	app.serverConfiguration = data;
+    		$("#content .progress .bar").css("width", "20%");
+	        $("#loading").html("scopes");        
+	        app.systemScopeList.fetch({
+	        	success: function(collection, response) {
+	        		$("#content .progress .bar").css("width", "40%");
+	                $("#loading").html("clients");
+	        		app.clientList.fetch({
+	        			success: function(collection, response) {
+	                		$("#content .progress .bar").css("width", "60%");
+	        		        $("#loading").html("whitelists");
+	        				app.whiteListList.fetch({
+	        					success: function(collection, response) {
+	        		        		$("#content .progress .bar").css("width", "80%");
+	        				        $("#loading").html("statistics");        						
+	        						app.clientStats.fetch({
+	        							success: function(model, response) {
+	        				        		$("#content .progress .bar").css("width", "100%");
+	        						        $("#loading").html("console");
+			        						var baseUrl = $.url(app.serverConfiguration.issuer);
+			        						Backbone.history.start({pushState: true, root: baseUrl.attr('relative') + 'manage/'});
+	        							}
+	        						});
+	        					}
+	        				});
+	        			}
+	        		});
+	        	}
+	        });
         });
 
     },
@@ -386,7 +414,7 @@ var AppRouter = Backbone.Router.extend({
 
         $('#content').html(this.clientListView.render().el);
         this.clientListView.delegateEvents();
-    	setPageTitle("Mange Clients");
+    	setPageTitle("Manage Clients");
 
     },
 
@@ -407,6 +435,8 @@ var AppRouter = Backbone.Router.extend({
     		generateClientSecret:true,
     		displayClientSecret:false,
     		scope: _.uniq(_.flatten(this.systemScopeList.defaultScopes().pluck("value"))),
+    		accessTokenValiditySeconds:3600,
+    		idTokenValiditySeconds:600
     	}, { silent: true });
     	
         this.clientFormView = new ClientFormView({model:client});
@@ -431,7 +461,7 @@ var AppRouter = Backbone.Router.extend({
         	}, { silent: true });
         }
         
-        if ($.inArray("refresh_token", client.get("authorizedGrantTypes")) != -1) {
+        if ($.inArray("refresh_token", client.get("grantTypes")) != -1) {
         	client.set({
         		allowRefresh: true
         	}, { silent: true });
@@ -555,7 +585,7 @@ var AppRouter = Backbone.Router.extend({
         this.blackListList.fetch({success:
         	function(collection, response, options) {
         		$('#content').html(view.render().el);
-            	setPageTitle("Mange Blacklist");
+            	setPageTitle("Manage Blacklist");
 
         	}
         });
@@ -565,12 +595,12 @@ var AppRouter = Backbone.Router.extend({
     	this.breadCrumbView.collection.reset();
     	this.breadCrumbView.collection.add([
              {text:"Home", href:""},
-             {text:"Mange System Scopes", href:"manage/#admin/scope"}
+             {text:"Manage System Scopes", href:"manage/#admin/scope"}
         ]);
     	
     	$('#content').html(this.systemScopeListView.render().el);
         this.systemScopeListView.delegateEvents();
-    	setPageTitle("Mange System Scopes");
+    	setPageTitle("Manage System Scopes");
 
     },
     
@@ -578,7 +608,7 @@ var AppRouter = Backbone.Router.extend({
     	this.breadCrumbView.collection.reset();
     	this.breadCrumbView.collection.add([
              {text:"Home", href:""},
-             {text:"Mange System Scopes", href:"manage/#admin/scope"},
+             {text:"Manage System Scopes", href:"manage/#admin/scope"},
              {text:"New", href:"manage/#admin/scope/new"}
         ]);
     	
@@ -594,7 +624,7 @@ var AppRouter = Backbone.Router.extend({
     	this.breadCrumbView.collection.reset();
     	this.breadCrumbView.collection.add([
              {text:"Home", href:""},
-             {text:"Mange System Scopes", href:"manage/#admin/scope"},
+             {text:"Manage System Scopes", href:"manage/#admin/scope"},
              {text:"Edit", href:"manage/#admin/scope/" + sid}
         ]);
 
@@ -618,14 +648,6 @@ $(function () {
 
     jQuery.ajaxSetup({async:false});
 
-    // load up our model and collection classes
-    /*
-    $.get('resources/js/client.js', _load);
-    $.get('resources/js/grant.js', _load);
-    $.get('resources/js/scope.js', _load);
-    $.get('resources/js/whitelist.js', _load);
-    */
-    
     var _load = function (templates) {
         $('body').append(templates);
     };
@@ -641,7 +663,7 @@ $(function () {
     app = new AppRouter();
 
     // grab all hashed URLs and send them through the app router instead
-    $('a[href*="#"]').on('click', function(event) {
+    $(document).on('click', 'a[href^="manage/#"]', function(event) {
     	event.preventDefault();
     	app.navigate(this.hash.slice(1), {trigger: true});
     });

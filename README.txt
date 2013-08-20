@@ -18,10 +18,13 @@ Issues can be reported at:
  
   https://github.com/mitreid-connect/OpenID-Connect-Java-Spring-Server/issues
 
+The mailing list for the project can be found at mitreid-connect@mit.edu, with archives available online:
+
+  https://mailman.mit.edu/mailman/listinfo/mitreid-connect
 
 
 
-Authors: Justin Richer, Amanda Anganes, Michael Walsh, Michael Jett, Steve Moore, Mike Derryberry
+Authors: Justin Richer, Amanda Anganes, Michael Walsh, Michael Jett, Steve Moore, Mike Derryberry, William Kim
 
 
 

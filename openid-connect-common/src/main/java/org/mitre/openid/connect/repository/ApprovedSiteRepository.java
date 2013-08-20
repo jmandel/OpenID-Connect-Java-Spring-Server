@@ -84,4 +84,5 @@ public interface ApprovedSiteRepository {
 	 * @return
 	 */
 	public Collection<ApprovedSite> getByClientId(String clientId);
+
 }

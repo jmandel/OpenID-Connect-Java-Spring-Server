@@ -27,8 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
-import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,31 +41,26 @@ public class RevocationEndpoint {
 
 	private static Logger logger = LoggerFactory.getLogger(RevocationEndpoint.class);
 
-	public RevocationEndpoint() {
-
-	}
-
-	// TODO
 	@PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_CLIENT')")
 	@RequestMapping("/revoke")
-	public String revoke(@RequestParam("token") String tokenValue, Principal principal, Model model) {
+	public String revoke(@RequestParam("token") String tokenValue, @RequestParam(value = "token_type_hint", required = false) String tokenType, Principal principal, Model model) {
 
 		// This is the token as passed in from OAuth (in case we need it some day)
 		//OAuth2AccessTokenEntity tok = tokenServices.getAccessToken((OAuth2Authentication) principal);
 
-		AuthorizationRequest clientAuth = null;
+		OAuth2Request authRequest = null;
 		if (principal instanceof OAuth2Authentication) {
 			// if the client is acting on its own behalf (the common case), pull out the client authorization request
-			clientAuth = ((OAuth2Authentication) principal).getAuthorizationRequest();
+			authRequest = ((OAuth2Authentication) principal).getOAuth2Request();
 		}
 
 		try {
 			// check and handle access tokens first
 
 			OAuth2AccessTokenEntity accessToken = tokenServices.readAccessToken(tokenValue);
-			if (clientAuth != null) {
+			if (authRequest != null) {
 				// client acting on its own, make sure it owns the token
-				if (!accessToken.getClient().getClientId().equals(clientAuth.getClientId())) {
+				if (!accessToken.getClient().getClientId().equals(authRequest.getClientId())) {
 					// trying to revoke a token we don't own, throw a 403
 					model.addAttribute("code", HttpStatus.FORBIDDEN);
 					return "httpCodeView";
@@ -83,9 +78,9 @@ public class RevocationEndpoint {
 
 			try {
 				OAuth2RefreshTokenEntity refreshToken = tokenServices.getRefreshToken(tokenValue);
-				if (clientAuth != null) {
+				if (authRequest != null) {
 					// client acting on its own, make sure it owns the token
-					if (!refreshToken.getClient().getClientId().equals(clientAuth.getClientId())) {
+					if (!refreshToken.getClient().getClientId().equals(authRequest.getClientId())) {
 						// trying to revoke a token we don't own, throw a 403
 						model.addAttribute("code", HttpStatus.FORBIDDEN);
 						return "httpCodeView";

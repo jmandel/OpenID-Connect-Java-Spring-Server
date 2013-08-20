@@ -6,8 +6,8 @@ import java.util.Map;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
-import org.springframework.security.oauth2.provider.DefaultAuthorizationRequest;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
+import org.springframework.security.oauth2.provider.OAuth2Request;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.stereotype.Service;
 
@@ -19,8 +19,9 @@ public class PreregistrationTokenService implements ResourceServerTokenServices 
 			throws AuthenticationException {
 		Map<String,String> authParams = new HashMap<String,String>();
 		authParams.put("accessToken", accessToken);
-		AuthorizationRequest r = new DefaultAuthorizationRequest(authParams);
-		PreregistrationToken ret = new PreregistrationToken(r, null);
+		AuthorizationRequest r = new AuthorizationRequest(authParams,null,null,null,null,null,false,"","",null);
+		
+		PreregistrationToken ret = new PreregistrationToken(r.createOAuth2Request(), null);
 		return ret;
 	}
 

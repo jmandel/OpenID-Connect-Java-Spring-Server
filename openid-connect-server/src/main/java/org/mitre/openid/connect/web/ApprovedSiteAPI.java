@@ -22,6 +22,7 @@ package org.mitre.openid.connect.web;
 import java.security.Principal;
 import java.util.Collection;
 
+import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.mitre.openid.connect.service.ApprovedSiteService;
 import org.slf4j.Logger;
@@ -46,6 +47,9 @@ public class ApprovedSiteAPI {
 
 	@Autowired
 	private ApprovedSiteService approvedSiteService;
+
+	@Autowired
+	OAuth2TokenEntityService tokenServices;
 
 	private static Logger logger = LoggerFactory.getLogger(ApprovedSiteAPI.class);
 
@@ -110,7 +114,7 @@ public class ApprovedSiteAPI {
 			return "jsonErrorView";
 		} else {
 			m.put("entity", approvedSite);
-			return "jsonEntityView";
+			return "jsonApprovedSiteView";
 		}
 
 	}

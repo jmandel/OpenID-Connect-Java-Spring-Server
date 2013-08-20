@@ -24,8 +24,8 @@ import org.mitre.oauth2.repository.AuthorizationCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.common.exceptions.InvalidGrantException;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
+import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
-import org.springframework.security.oauth2.provider.code.AuthorizationRequestHolder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -51,7 +51,7 @@ public class DefaultOAuth2AuthorizationCodeService implements AuthorizationCodeS
 	 * @return 					the authorization code
 	 */
 	@Override
-	public String createAuthorizationCode(AuthorizationRequestHolder authentication) {
+	public String createAuthorizationCode(OAuth2Authentication authentication) {
 		String code = generator.generate();
 
 		AuthorizationCodeEntity entity = new AuthorizationCodeEntity(code, authentication);
@@ -71,9 +71,9 @@ public class DefaultOAuth2AuthorizationCodeService implements AuthorizationCodeS
 	 * @throws 			InvalidGrantException, if an AuthorizationCodeEntity is not found with the given value
 	 */
 	@Override
-	public AuthorizationRequestHolder consumeAuthorizationCode(String code) throws InvalidGrantException {
+	public OAuth2Authentication consumeAuthorizationCode(String code) throws InvalidGrantException {
 
-		AuthorizationRequestHolder auth = repository.consume(code);
+		OAuth2Authentication auth = repository.consume(code);
 		return auth;
 	}
 

@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package org.mitre.openid.connect.client;
+package org.mitre.openid.connect.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.mitre.openid.connect.config.ServerConfiguration;
-import org.mitre.openid.connect.model.UserInfo;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -35,7 +34,7 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
 
 	private static final long serialVersionUID = 22100073066377804L;
 
-	private final Object principal;
+	private final ImmutableMap<String, String> principal;
 	private final String idTokenValue; // string representation of the id token
 	private final String accessTokenValue; // string representation of the access token
 	private final String refreshTokenValue; // string representation of the refresh token
@@ -120,7 +119,6 @@ public class OIDCAuthenticationToken extends AbstractAuthenticationToken {
 	 */
 	@Override
 	public Object getPrincipal() {
-		// TODO Auto-generated method stub
 		return principal;
 	}
 

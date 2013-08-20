@@ -71,7 +71,9 @@ public class OAuthConfirmationController {
 	public String confimAccess(Map<String, Object> model, @ModelAttribute("authorizationRequest") AuthorizationRequest clientAuth) {
 
 		// Check the "prompt" parameter to see if we need to do special processing
-		String prompt = clientAuth.getAuthorizationParameters().get("prompt");
+
+		// TODO (issue #450)
+		String prompt = clientAuth.getRequestParameters().get("prompt");
 		if ("none".equals(prompt)) {
 			// we're not supposed to prompt, so "return an error"
 			logger.info("Client requested no prompt, returning 403 from confirmation endpoint");
@@ -86,13 +88,11 @@ public class OAuthConfirmationController {
 		try {
 			client = clientService.loadClientByClientId(clientAuth.getClientId());
 		} catch (OAuth2Exception e) {
-			logger.error("confirmAccess: OAuth2Exception was thrown when attempting to load client: "
-					+ e.getStackTrace().toString());
+			logger.error("confirmAccess: OAuth2Exception was thrown when attempting to load client", e);
 			model.put("code", HttpStatus.BAD_REQUEST);
 			return "httpCodeView";
 		} catch (IllegalArgumentException e) {
-			logger.error("confirmAccess: IllegalArgumentException was thrown when attempting to load client: "
-					+ e.getStackTrace().toString());
+			logger.error("confirmAccess: IllegalArgumentException was thrown when attempting to load client", e);
 			model.put("code", HttpStatus.BAD_REQUEST);
 			return "httpCodeView";
 		}
@@ -106,7 +106,7 @@ public class OAuthConfirmationController {
 		model.put("auth_request", clientAuth);
 		model.put("client", client);
 
-		String redirect_uri = clientAuth.getAuthorizationParameters().get("redirect_uri");
+		String redirect_uri = clientAuth.getRedirectUri();
 
 		model.put("redirect_uri", redirect_uri);
 
