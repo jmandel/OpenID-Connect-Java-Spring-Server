@@ -65,25 +65,6 @@
 						</div>
 					</c:if>
 
-					<c:if test="${ not empty client.logoUri }">
-						<ul class="thumbnails">
-							<li class="span4">
-								<div class="thumbnail">
-									<img src="${client.logoUri }" />
-								</div>
-							</li>
-						</ul>
-					</c:if>
-					Do you authorize 
-					"<c:choose>
-						<c:when test="${empty client.clientName}">
-							<c:out value="${client.clientId}" />
-						</c:when>
-						<c:otherwise>
-							<c:out value="${client.clientName}" />
-						</c:otherwise>
-					</c:choose>"
-					to sign you into their site using your identity?
 					<c:if test="${not empty client.clientDescription}">
 						<div>
 							<a class="small" href="#"onclick="$('#description').toggle('fast'); return false;"><i class="icon-chevron-right"></i> more information</a>

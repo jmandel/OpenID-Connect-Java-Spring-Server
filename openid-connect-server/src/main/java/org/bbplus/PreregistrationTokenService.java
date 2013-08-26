@@ -3,6 +3,7 @@ package org.bbplus;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
@@ -16,10 +17,11 @@ public class PreregistrationTokenService implements ResourceServerTokenServices 
 	@Override
 	public OAuth2Authentication loadAuthentication(String accessToken)
 			throws AuthenticationException {
-		Map<String,String> authParams = new HashMap<String,String>();
-		authParams.put("accessToken", accessToken);
-		AuthorizationRequest r = new AuthorizationRequest(authParams,null,null,null,null,null,false,"","",null);
 		
+		// Return an empty (but valid) authorizationRequest,
+		// which OAuth2AuthenticationManager will enhance by adding details.
+		// (Details include the accessToken string, which is all we real need.)
+		AuthorizationRequest r = new AuthorizationRequest(null,null,null,null,null,null,false,"","",null);
 		PreregistrationToken ret = new PreregistrationToken(r.createOAuth2Request(), null);
 		return ret;
 	}
