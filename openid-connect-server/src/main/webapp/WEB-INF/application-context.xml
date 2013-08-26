@@ -204,11 +204,6 @@
 	<bean id="clientAssertionAuthenticationProvider" class="org.mitre.openid.connect.assertion.JwtBearerAuthenticationProvider" />
 
 	<bean id="validateTrustedRegistration" class="org.bbplus.BBTrustedRegistrationValidator" />
-	<bean id="bbPermissions" class="org.bbplus.BBPermissions" />
-	<bean id="documentFactory" class="org.bbplus.DocumentFactory" />
-	<bean id="documentReferenceFactory" class="org.bbplus.DocumentReferenceFactory" />
-	<bean id="documentReferenceFeedFactory" class="org.bbplus.DocumentReferenceFeedFactory" />
-	<bean id="bbUtilties" class="org.bbplus.Utilities" />
 	
 	<!-- user services -->
 	<import resource="user-context.xml" />
