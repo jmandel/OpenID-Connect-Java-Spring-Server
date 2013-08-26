@@ -35,15 +35,14 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 
@@ -70,7 +69,7 @@ public class PreregistrationAuthenticationProvider implements AuthenticationProv
 
 		PreregistrationToken p = (PreregistrationToken) authentication;
 	
-		String raw = p.getOAuth2Request().getRequestParameters().get("accessToken");
+		String raw = ((OAuth2AuthenticationDetails) p.getDetails()).getTokenValue();
 		
 		logger.debug("auth providr making its auth'd tok on raw: " + raw);
 		

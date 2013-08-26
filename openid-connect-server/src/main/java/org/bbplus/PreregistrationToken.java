@@ -20,9 +20,7 @@
 package org.bbplus;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
@@ -38,6 +36,10 @@ import com.nimbusds.jwt.SignedJWT;
  */
 public class PreregistrationToken extends OAuth2Authentication {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private JsonObject clientDefinitionFromTrustedRegistry;
 	private SignedJWT jwt;
 	

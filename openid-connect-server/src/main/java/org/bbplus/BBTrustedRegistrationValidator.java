@@ -1,9 +1,7 @@
 package org.bbplus;
 
-import java.util.Collection;
 import java.util.Map;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;

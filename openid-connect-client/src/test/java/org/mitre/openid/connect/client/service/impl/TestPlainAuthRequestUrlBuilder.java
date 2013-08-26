@@ -16,6 +16,9 @@
  ******************************************************************************/
 package org.mitre.openid.connect.client.service.impl;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mitre.oauth2.model.RegisteredClient;
@@ -24,9 +27,6 @@ import org.mockito.Mockito;
 import org.springframework.security.authentication.AuthenticationServiceException;
 
 import com.google.common.collect.Sets;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
 
 /**
  * @author wkim

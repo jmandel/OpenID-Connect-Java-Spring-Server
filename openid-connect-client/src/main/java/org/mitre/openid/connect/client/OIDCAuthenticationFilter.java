@@ -16,6 +16,8 @@
  ******************************************************************************/
 package org.mitre.openid.connect.client;
 
+import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.SECRET_BASIC;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
@@ -59,8 +61,6 @@ import com.google.gson.JsonParser;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.ReadOnlyJWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-
-import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.*;
 
 /**
  * OpenID Connect Authentication Filter class
