@@ -16,12 +16,15 @@
  ******************************************************************************/
 package org.mitre.openid.connect.client;
 
+import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.SECRET_BASIC;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URI;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -33,11 +36,14 @@ import org.mitre.jwt.signer.service.JwtSigningAndValidationService;
 import org.mitre.jwt.signer.service.impl.JWKSetSigningAndValidationServiceCacheService;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.client.model.IssuerServiceResponse;
+import org.mitre.openid.connect.client.service.AuthRequestOptionsService;
 import org.mitre.openid.connect.client.service.AuthRequestUrlBuilder;
 import org.mitre.openid.connect.client.service.ClientConfigurationService;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.mitre.openid.connect.client.service.ServerConfigurationService;
+import org.mitre.openid.connect.client.service.impl.StaticAuthRequestOptionsService;
 import org.mitre.openid.connect.config.ServerConfiguration;
+import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
@@ -58,8 +64,6 @@ import com.google.gson.JsonParser;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jwt.ReadOnlyJWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-
-import static org.mitre.oauth2.model.ClientDetailsEntity.AuthMethod.SECRET_BASIC;
 
 /**
  * OpenID Connect Authentication Filter class
@@ -87,8 +91,9 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 	private ServerConfigurationService servers;
 	private ClientConfigurationService clients;
 	private IssuerService issuerService;
+	private AuthRequestOptionsService authOptions = new StaticAuthRequestOptionsService(); // initialize with an empty set of options
 	private AuthRequestUrlBuilder authRequestBuilder;
-
+	
 	protected int httpSocketTimeout = HTTP_SOCKET_TIMEOUT;
 
 	/**
@@ -184,7 +189,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 				throw new AuthenticationServiceException("No client configuration found for issuer: " + issuer);
 			}
 
-			String redirectUri = null; 
+			String redirectUri = null;
 			if (clientConfig.getRegisteredRedirectUri() != null && clientConfig.getRegisteredRedirectUri().size() == 1) {
 				// if there's a redirect uri configured (and only one), use that
 				redirectUri = clientConfig.getRegisteredRedirectUri().toArray(new String[] {})[0];
@@ -200,7 +205,9 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 			// this value comes back in the auth code response
 			String state = createState(session);
 
-			String authRequest = authRequestBuilder.buildAuthRequestUrl(serverConfig, clientConfig, redirectUri, nonce, state);
+			Map<String, String> options = authOptions.getOptions(serverConfig, clientConfig, request);
+			
+			String authRequest = authRequestBuilder.buildAuthRequestUrl(serverConfig, clientConfig, redirectUri, nonce, state, options);
 
 			logger.debug("Auth Request:  " + authRequest);
 
@@ -402,8 +409,7 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 				}
 
 				// compare the nonce to our stored claim
-				// TODO: Nimbus claims as strings?
-				String nonce = (String) idClaims.getCustomClaim("nonce");
+				String nonce = idClaims.getStringClaim("nonce");
 				if (Strings.isNullOrEmpty(nonce)) {
 
 					logger.error("ID token did not contain a nonce claim.");
@@ -601,6 +607,20 @@ public class OIDCAuthenticationFilter extends AbstractAuthenticationProcessingFi
 	 */
 	public void setAuthRequestUrlBuilder(AuthRequestUrlBuilder authRequestBuilder) {
 		this.authRequestBuilder = authRequestBuilder;
+	}
+
+	/**
+	 * @return the authOptions
+	 */
+	public AuthRequestOptionsService getAuthRequestOptionsService() {
+		return authOptions;
+	}
+
+	/**
+	 * @param authOptions the authOptions to set
+	 */
+	public void setAuthRequestOptionsService(AuthRequestOptionsService authOptions) {
+		this.authOptions = authOptions;
 	}
 
 }

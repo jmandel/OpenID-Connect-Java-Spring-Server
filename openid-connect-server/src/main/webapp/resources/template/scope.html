@@ -15,7 +15,7 @@
  limitations under the License.
 -->
 <!-- system scope -->
-<script type="text/html" id = "tmpl-system-scope-table">
+<script type="text/html" id="tmpl-system-scope-table">
 
     <div class="well well-small">
 		<button class="btn btn-small refresh-table"><i class="icon-refresh"></i> Refresh</button> &nbsp;
@@ -47,13 +47,18 @@
 
 <script type="text/html" id="tmpl-system-scope">
 	<td>
-		<% if (icon) { %>
-		<i class="icon-<%= icon %>"></i>
+		<% if (allowDynReg) { %>
+			<span class="label label-inverse allow-dyn-reg"><i class="icon-globe icon-white"></i></span>
 		<% } %>
 	</td>
 
     <td>
-        <%= value %>
+        <span class="badge badge-info">
+		<% if (icon) { %>
+			<i class="icon-<%= icon %> icon-white"></i>
+		<% } %>
+		<%= value %>
+		</span>
         <blockquote><small><%= description %></small></blockquote>
     </td>
 
@@ -134,6 +139,15 @@
 						<input type="checkbox" <%=allowDynReg ? 'checked' : '' %>> allow dynamic registration
 					</label>
 					<p class="help-block">Allow dynamically registered clients to request this scope?</p>
+				</div>
+			</div>
+
+			<div class="control-group" id="isStructured">
+				<div class="controls">
+					<label class="checkbox">
+						<input type="checkbox" <%=isStructured ? 'checked' : '' %>> is a structured scope
+					</label>
+					<p class="help-block">Is the scope structured with structured values like <code>base:extension</code>?</p>
 				</div>
 			</div>
 

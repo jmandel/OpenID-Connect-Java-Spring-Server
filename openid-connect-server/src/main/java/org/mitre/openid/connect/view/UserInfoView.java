@@ -36,6 +36,8 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.web.servlet.view.AbstractView;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
@@ -50,6 +52,8 @@ import com.nimbusds.jwt.JWTParser;
 
 @Component("userInfoView")
 public class UserInfoView extends AbstractView {
+	
+	private static JsonParser jsonParser = new JsonParser();
 
 	private static Logger logger = LoggerFactory.getLogger(UserInfoView.class);
 
@@ -62,6 +66,21 @@ public class UserInfoView extends AbstractView {
 		UserInfo userInfo = (UserInfo) model.get("userInfo");
 
 		Set<String> scope = (Set<String>) model.get("scope");
+		
+		String claimsRequestJsonString = (String) model.get("claimsRequest");
+		
+		// getting the 'claims request parameter' from the model
+		JsonObject claimsRequest = null;
+		if (!Strings.isNullOrEmpty(claimsRequestJsonString)) {
+			JsonElement parsed = jsonParser.parse(claimsRequestJsonString);
+			if (parsed.isJsonObject()) {
+				claimsRequest = parsed.getAsJsonObject();
+			} else {
+				// claimsRequest stays null
+				logger.warn("Claims parameter not a valid JSON object: " + claimsRequestJsonString);
+			}
+		}
+		
 
 		Gson gson = new GsonBuilder()
 		.setExclusionStrategies(new ExclusionStrategy() {
@@ -98,18 +117,15 @@ public class UserInfoView extends AbstractView {
 					JWT requestObject = JWTParser.parse(jwtString);
 
 					// FIXME: move to GSON for easier processing
-					JsonObject obj = (JsonObject) new JsonParser().parse(requestObject.getJWTClaimsSet().toJSONObject().toJSONString());
+					JsonObject obj = (JsonObject) jsonParser.parse(requestObject.getJWTClaimsSet().toJSONObject().toJSONString());
 
-					gson.toJson(toJsonFromRequestObj(userInfo, scope, obj), out);
+					gson.toJson(toJsonFromRequestObj(userInfo, scope, obj, claimsRequest), out);
 				} catch (JsonSyntaxException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("JsonSyntaxException in UserInfoView.java: ", e);
 				} catch (JsonIOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("JsonIOException in UserInfoView.java: ", e);
 				} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("ParseException in UserInfoView.java: ", e);
 				}
 
 			} else {
@@ -178,7 +194,7 @@ public class UserInfoView extends AbstractView {
 	}
 
 	/**
-	 * Build a JSON response according to the request object recieved.
+	 * Build a JSON response according to the request object received.
 	 * 
 	 * Claims requested in requestObj.userinfo.claims are added to any
 	 * claims corresponding to requested scopes, if any.
@@ -186,27 +202,45 @@ public class UserInfoView extends AbstractView {
 	 * @param ui
 	 * @param scope
 	 * @param requestObj
+	 * @param claimsRequest the claims request parameter object.
 	 * @return
 	 */
-	private JsonObject toJsonFromRequestObj(UserInfo ui, Set<String> scope, JsonObject requestObj) {
+	private JsonObject toJsonFromRequestObj(UserInfo ui, Set<String> scope, JsonObject requestObj, JsonObject claimsRequest) {
 
 		JsonObject obj = toJson(ui, scope);
 
 		//Process list of requested claims out of the request object
-		JsonElement userInfo = requestObj.get("userinfo");
-		if (userInfo == null || !userInfo.isJsonObject()) {
-			return obj;
-		}
-
-		JsonElement claims = userInfo.getAsJsonObject().get("claims");
+		JsonElement claims = requestObj.get("claims");
 		if (claims == null || !claims.isJsonObject()) {
 			return obj;
 		}
 
-		// TODO: this mehod is likely to be fragile if the data model changes at all
+		JsonElement userinfo = claims.getAsJsonObject().get("userinfo");
+		if (userinfo == null || !userinfo.isJsonObject()) {
+			return obj;
+		}
+
+		
+		// Filter claims from the request object with the claims from the claims request parameter, if it exists
+		
+		// Doing the set intersection manually because the claim entries may be referring to
+		// the same claim but have different 'individual claim values', causing the Entry<> to be unequal, 
+		// which doesn't allow the use of the more compact Sets.intersection() type method.
+		Set<Entry<String, JsonElement>> requestClaimsSet = Sets.newHashSet();
+		if (claimsRequest != null) {
+			
+			for (Entry<String, JsonElement> entry : userinfo.getAsJsonObject().entrySet()) {
+				if (claimsRequest.has(entry.getKey())) {
+					requestClaimsSet.add(entry);
+				}
+			}
+			
+		}
+		
+		// TODO: this method is likely to be fragile if the data model changes at all
 
 		//For each claim found, add it if not already present
-		for (Entry<String, JsonElement> i : claims.getAsJsonObject().entrySet()) {
+		for (Entry<String, JsonElement> i : requestClaimsSet) {
 			String claimName = i.getKey();
 			if (!obj.has(claimName)) {
 				String value = "";
@@ -222,20 +256,15 @@ public class UserInfoView extends AbstractView {
 					value = (String) getter.invoke(ui);
 					obj.addProperty(claimName, value);
 				} catch (SecurityException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("SecurityException in UserInfoView.java: ", e);
 				} catch (NoSuchMethodException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("NoSuchMethodException in UserInfoView.java: ", e);
 				} catch (IllegalArgumentException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("IllegalArgumentException in UserInfoView.java: ", e);
 				} catch (IllegalAccessException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("IllegalAccessException in UserInfoView.java: ", e);
 				} catch (InvocationTargetException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error("InvocationTargetException in UserInfoView.java: ", e);
 				}
 			}
 		}

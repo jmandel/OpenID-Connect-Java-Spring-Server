@@ -117,7 +117,44 @@ var ApprovedSiteView = Backbone.View.extend({
 	},
 
 	render: function() {
-		var json = {grant: this.model.toJSON(), client: this.options.client.toJSON()};
+		
+		var creationDate = this.model.get("creationDate");
+		var accessDate = this.model.get("accessDate");
+		var timeoutDate = this.model.get("timeoutDate");
+		
+		if (creationDate == null || !moment(creationDate).isValid()) {
+			creationDate = "Unknown";
+		} else {
+			creationDate = moment(creationDate);
+			if (moment().diff(creationDate, 'months') < 6) {
+				creationDate = creationDate.fromNow();
+			} else {
+				creationDate = creationDate.format("MMMM Do, YYYY");
+			}
+		}
+		
+		if (accessDate == null || !moment(accessDate).isValid()) {
+			accessDate = "Unknown";
+		} else {
+			accessDate = moment(accessDate);
+			if (moment().diff(accessDate, 'months') < 6) {
+				accessDate = accessDate.fromNow();
+			} else {
+				accessDate = accessDate.format("MMMM Do, YYYY");
+			}
+		}
+		
+		if (timeoutDate == null) {
+			timeoutDate = "Never";
+		} else if (!moment(timeoutDate).isValid()) {
+			timeoutDate = "Unknown";
+		} else {
+			timeoutDate = moment(timeoutDate).calendar();
+		}
+		
+		var formattedDate = {creationDate: creationDate, accessDate: accessDate, timeoutDate: timeoutDate};
+		
+		var json = {grant: this.model.toJSON(), client: this.options.client.toJSON(), formattedDate: formattedDate};
 		
 		this.$el.html(this.template(json));
 

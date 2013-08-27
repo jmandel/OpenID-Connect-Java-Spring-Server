@@ -73,8 +73,8 @@ var ClientModel = Backbone.Model.extend({
         requestUris:[],
         
         authorities:[],
-        accessTokenValiditySeconds: 3600,
-        refreshTokenValiditySeconds: 604800,
+        accessTokenValiditySeconds: null,
+        refreshTokenValiditySeconds: null,
         resourceIds:[],
         //additionalInformation?
         
@@ -82,7 +82,7 @@ var ClientModel = Backbone.Model.extend({
         reuseRefreshToken:true,
         dynamicallyRegistered:false,
         allowIntrospection:false,
-        idTokenValiditySeconds: 600,
+        idTokenValiditySeconds: null,
         createdAt:null,     
 
         allowRefresh:false,
@@ -133,7 +133,8 @@ var ClientView = Backbone.View.extend({
     },
 
     render:function (eventName) {
-        this.$el.html(this.template(this.model.toJSON()));
+    	var json = {client: this.model.toJSON(), count: this.options.count};
+        this.$el.html(this.template(json));
 
         $('.scope-list', this.el).html(this.scopeTemplate({scopes: this.model.get('scope'), systemScopes: app.systemScopeList}));
         
@@ -230,7 +231,11 @@ var ClientListView = Backbone.View.extend({
         $(this.el).html($('#tmpl-client-table').html());
 
         _.each(this.model.models, function (client) {
-            $("#client-table",this.el).append(new ClientView({model:client}).render().el);
+            $("#client-table",this.el).append(
+            		new ClientView({
+            				model:client, 
+            				count:this.options.stats.get(client.get('id'))
+            			}).render().el);
         }, this);
 
         this.togglePlaceholder();
@@ -250,9 +255,13 @@ var ClientListView = Backbone.View.extend({
 	
     refreshTable:function() {
     	var _self = this;
-    	this.model.fetch({
+    	_self.model.fetch({
     		success: function() {
-    			_self.render();
+    			_self.options.stats.fetch({
+    				success: function () {
+    					_self.render();
+    				}
+    			});
     		}
     	});
     }
@@ -279,9 +288,16 @@ var ClientFormView = Backbone.View.extend({
     events:{
         "click .btn-save":"saveClient",
         "click #allowRefresh" : "toggleRefreshTokenTimeout",
-        "click #disableAccessTokenTimeout" : function(){ $("#access-token-timeout-seconds", this.$el).prop('disabled',!$("#access-token-timeout-seconds", this.$el).prop('disabled')); },
-        "click #disableIDTokenTimeout" : function(){ $("#id-token-timeout-seconds", this.$el).prop('disabled',!$("#id-token-timeout-seconds", this.$el).prop('disabled')); },
-        "click #disableRefreshTokenTimeout" : function(){ $("#refresh-token-timeout-seconds", this.$el).prop('disabled',!$("#refresh-token-timeout-seconds", this.$el).prop('disabled')); },
+        "click #disableAccessTokenTimeout" : function() { 
+        	$("#access-token-timeout-time", this.$el).prop('disabled',!$("#access-token-timeout-time", this.$el).prop('disabled')); 
+        	$("#access-token-timeout-unit", this.$el).prop('disabled',!$("#access-token-timeout-unit", this.$el).prop('disabled')); 
+        	document.getElementById("access-token-timeout-time").value = '';
+        	},
+        "click #disableRefreshTokenTimeout" : function() { 
+        	$("#refresh-token-timeout-time", this.$el).prop('disabled',!$("#refresh-token-timeout-time", this.$el).prop('disabled'));
+        	$("#refresh-token-timeout-unit", this.$el).prop('disabled',!$("#refresh-token-timeout-unit", this.$el).prop('disabled')); 
+        	document.getElementById("refresh-token-timeout-time").value = ''; 	
+        	},
         "click .btn-cancel": function() { window.history.back(); return false; },
         "change #requireClientSecret":"toggleRequireClientSecret",
         "change #displayClientSecret":"toggleDisplayClientSecret",
@@ -290,7 +306,7 @@ var ClientFormView = Backbone.View.extend({
     },
 
     toggleRefreshTokenTimeout:function () {
-        $("#refreshTokenValiditySeconds", this.$el).toggle();
+        $("#refreshTokenValidityTime", this.$el).toggle();
     },
     
     previewLogo:function(event) {
@@ -357,9 +373,41 @@ var ClientFormView = Backbone.View.extend({
     	}
     },
 
-    getFormTokenValue:function(value) {
-        if (value == "") return null;
-        else return value;
+    // rounds down to the nearest integer value in seconds.
+    getFormTokenNumberValue:function(value, timeUnit) {
+        if (value == "") {
+        	return null;
+        } else if (timeUnit == 'hours') {
+        	return parseInt(parseFloat(value) * 3600);
+        } else if (timeUnit == 'minutes') {
+        	return parseInt(parseFloat(value) * 60);
+        } else { // seconds
+        	return parseInt(value);
+        }
+    },
+    
+    // returns "null" if given the value "default" as a string, otherwise returns input value. useful for parsing the JOSE algorithm dropdowns
+    defaultToNull:function(value) {
+    	if (value == 'default') {
+    		return null;
+    	} else {
+    		return value;
+    	}
+    },
+    
+    disableUnsupportedJOSEItems:function(serverSupported, query) {
+        var supported = ['default'];
+        if (serverSupported) {
+        	supported = _.union(supported, serverSupported);
+        }
+        $(query, this.$el).each(function(idx) {
+        	if(_.contains(supported, $(this).val())) {
+        		$(this).prop('disabled', false);
+        	} else {
+        		$(this).prop('disabled', true);
+        	}
+        });
+    	
     },
 
     // maps from a form-friendly name to the real grant parameter name
@@ -372,7 +420,7 @@ var ClientFormView = Backbone.View.extend({
     	'refresh_token': 'refresh_token'
     },
     
-    // maps from a form-friendly name to the real reponse type parameter name
+    // maps from a form-friendly name to the real response type parameter name
     responseMap:{
     	'code': 'code',
     	'token': 'token',
@@ -417,13 +465,10 @@ var ClientFormView = Backbone.View.extend({
 
         var accessTokenValiditySeconds = null;
         if (!$('disableAccessTokenTimeout').is(':checked')) {
-        	accessTokenValiditySeconds = parseInt(this.getFormTokenValue($('#accessTokenValiditySeconds input[type=text]').val())); 
+        	accessTokenValiditySeconds = this.getFormTokenNumberValue($('#accessTokenValidityTime input[type=text]').val(), $('#accessTokenValidityTime select').val()); 
         }
         
-        var idTokenValiditySeconds = null;
-        if (!$('disableIDTokenTimeout').is(':checked')) {
-        	idTokenValiditySeconds = parseInt(this.getFormTokenValue($('#idTokenValiditySeconds input[type=text]').val())); 
-        }
+        var idTokenValiditySeconds = this.getFormTokenNumberValue($('#idTokenValidityTime input[type=text]').val(), $('#idTokenValidityTime select').val()); 
         
         var refreshTokenValiditySeconds = null;
         if ($('#allowRefresh').is(':checked')) {
@@ -437,7 +482,7 @@ var ClientFormView = Backbone.View.extend({
         	}
 
         	if (!$('disableRefreshTokenTimeout').is(':checked')) {
-        		refreshTokenValiditySeconds = parseInt(this.getFormTokenValue($('#refreshTokenValiditySeconds input[type=text]').val()));
+        		refreshTokenValiditySeconds = this.getFormTokenNumberValue($('#refreshTokenValidityTime input[type=text]').val(), $('#refreshTokenValidityTime select').val());
         	}
         }
         
@@ -453,7 +498,7 @@ var ClientFormView = Backbone.View.extend({
             accessTokenValiditySeconds: accessTokenValiditySeconds,
             refreshTokenValiditySeconds: refreshTokenValiditySeconds,
             idTokenValiditySeconds: idTokenValiditySeconds,
-            allowRefresh: $('#allowRefresh').is(':checked'), // TODO: why are these two checkboxes different?
+            allowRefresh: $('#allowRefresh').is(':checked'),
             allowIntrospection: $('#allowIntrospection input').is(':checked'), // <-- And here? --^
             scope: scopes,
             
@@ -469,28 +514,24 @@ var ClientFormView = Backbone.View.extend({
             sectorIdentifierUri: $('#sectorIdentifierUri input').val(),
             initiateLoginUri: $('#initiateLoginUri input').val(),
             postLogoutRedirectUri: $('#postLogoutRedirectUri input').val(),
-            reuseRefreshToken: $('#reuseRefreshToken').is(':checked'), // TODO: another funny checkbox
+            reuseRefreshToken: $('#reuseRefreshToken').is(':checked'),
             requireAuthTime: $('#requireAuthTime input').is(':checked'),
             defaultMaxAge: parseInt($('#defaultMaxAge input').val()),
             contacts: this.contactsCollection.pluck('item'),
             requestUris: this.requestUrisCollection.pluck('item'),
             defaultAcrValues: this.defaultAcrValuesCollection.pluck('item'),
-            requestObjectSigningAlg: $('#requestObjectSigningAlg select').val(),
-            userInfoSignedResponseAlg: $('#userInfoSignedResponseAlg select').val(),
-            userInfoEncryptedResponseAlg: $('#userInfoEncryptedResponseAlg select').val(),
-            userInfoEncryptedResponseEnc: $('#userInfoEncryptedResponseEnc select').val(),
-            idTokenSignedResponseAlg: $('#idTokenSignedResponseAlg select').val(),
-            idTokenEncryptedResponseAlg: $('#idTokenEncryptedResponseAlg select').val(),
-            idTokenEncryptedResponseEnc: $('#idTokenEncryptedResponseEnc select').val()
+            requestObjectSigningAlg: this.defaultToNull($('#requestObjectSigningAlg select').val()),
+            userInfoSignedResponseAlg: this.defaultToNull($('#userInfoSignedResponseAlg select').val()),
+            userInfoEncryptedResponseAlg: this.defaultToNull($('#userInfoEncryptedResponseAlg select').val()),
+            userInfoEncryptedResponseEnc: this.defaultToNull($('#userInfoEncryptedResponseEnc select').val()),
+            idTokenSignedResponseAlg: this.defaultToNull($('#idTokenSignedResponseAlg select').val()),
+            idTokenEncryptedResponseAlg: this.defaultToNull($('#idTokenEncryptedResponseAlg select').val()),
+            idTokenEncryptedResponseEnc: this.defaultToNull($('#idTokenEncryptedResponseEnc select').val())
         };
 
         // post-validate
         if (attrs["allowRefresh"] == false) {
             attrs["refreshTokenValiditySeconds"] = null;
-        }
-
-        if ($('#disableIDTokenTimeout').is(':checked')) {
-             attrs["idTokenValiditySeconds"] = null;
         }
 
         if ($('#disableAccessTokenTimeout').is(':checked')) {
@@ -595,24 +636,31 @@ var ClientFormView = Backbone.View.extend({
         
         // set up token  fields
         if (!this.model.get("allowRefresh")) {
-            $("#refreshTokenValiditySeconds", this.$el).hide();
+            $("#refreshTokenValidityTime", this.$el).hide();
         }
 
         if (this.model.get("accessTokenValiditySeconds") == null) {
-            $("#access-token-timeout-seconds", this.$el).prop('disabled',true);
+            $("#access-token-timeout-time", this.$el).prop('disabled',true);
+            $("#access-token-timeout-unit", this.$el).prop('disabled',true);
         }
 
         if (this.model.get("refreshTokenValiditySeconds") == null) {
-            $("#refresh-token-timeout-seconds", this.$el).prop('disabled',true);
-        }
-
-        if (this.model.get("idTokenValiditySeconds") == null) {
-            $("#id-token-timeout-seconds", this.$el).prop('disabled',true);
+            $("#refresh-token-timeout-time", this.$el).prop('disabled',true);
+            $("#refresh-token-timeout-unit", this.$el).prop('disabled',true);
         }
 
         // toggle other dynamic fields
         this.toggleRequireClientSecret();
         this.previewLogo();
+        
+        // disable unsupported JOSE algorithms
+        this.disableUnsupportedJOSEItems(app.serverConfiguration.request_object_signing_alg_values_supported, '#requestObjectSigningAlg option');
+        this.disableUnsupportedJOSEItems(app.serverConfiguration.userinfo_signing_alg_values_supported, '#userInfoSignedResponseAlg option');
+        this.disableUnsupportedJOSEItems(app.serverConfiguration.userinfo_encryption_alg_values_supported, '#userInfoEncryptedResponseAlg option');
+        this.disableUnsupportedJOSEItems(app.serverConfiguration.userinfo_encryption_enc_values_supported, '#userInfoEncryptedResponseEnc option');
+        this.disableUnsupportedJOSEItems(app.serverConfiguration.id_token_signing_alg_values_supported, '#idTokenSignedResponseAlg option');
+        this.disableUnsupportedJOSEItems(app.serverConfiguration.id_token_encryption_alg_values_supported, '#idTokenEncryptedResponseAlg option');
+        this.disableUnsupportedJOSEItems(app.serverConfiguration.id_token_encryption_enc_values_supported, '#idTokenEncryptedResponseEnc option');
         
         this.$('.nyi').clickover({
         	placement: 'right', 

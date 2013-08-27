@@ -20,14 +20,21 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+import org.mitre.oauth2.repository.OAuth2TokenRepository;
 import org.mitre.openid.connect.model.ApprovedSite;
 import org.mitre.openid.connect.model.WhitelistedSite;
 import org.mitre.openid.connect.repository.ApprovedSiteRepository;
 import org.mitre.openid.connect.service.ApprovedSiteService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.provider.ClientDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 
 /**
  * Implementation of the ApprovedSiteService
@@ -39,24 +46,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class DefaultApprovedSiteService implements ApprovedSiteService {
 
+	private static Logger logger = LoggerFactory.getLogger(DefaultApprovedSiteService.class);
+
 	@Autowired
 	private ApprovedSiteRepository approvedSiteRepository;
 
-	/**
-	 * Default constructor
-	 */
-	public DefaultApprovedSiteService() {
-
-	}
-
-	/**
-	 * Constructor for use in test harnesses.
-	 * 
-	 * @param repository
-	 */
-	public DefaultApprovedSiteService(ApprovedSiteRepository approvedSiteRepository) {
-		this.approvedSiteRepository = approvedSiteRepository;
-	}
+	@Autowired
+	private OAuth2TokenRepository tokenRepository;
 
 	@Override
 	public Collection<ApprovedSite> getAll() {
@@ -77,6 +73,17 @@ public class DefaultApprovedSiteService implements ApprovedSiteService {
 	@Override
 	@Transactional
 	public void remove(ApprovedSite approvedSite) {
+
+		//Remove any associated access and refresh tokens
+		Set<OAuth2AccessTokenEntity> accessTokens = approvedSite.getApprovedAccessTokens();
+
+		for (OAuth2AccessTokenEntity token : accessTokens) {
+			if (token.getRefreshToken() != null) {
+				tokenRepository.removeRefreshToken(token.getRefreshToken());
+			}
+			tokenRepository.removeAccessToken(token);
+		}
+
 		approvedSiteRepository.remove(approvedSite);
 	}
 
@@ -136,6 +143,30 @@ public class DefaultApprovedSiteService implements ApprovedSiteService {
 				approvedSiteRepository.remove(approvedSite);
 			}
 		}
+	}
+
+	@Override
+	public void clearExpiredSites() {
+
+		logger.info("Clearing expired approved sites");
+
+		Collection<ApprovedSite> expiredSites = getExpired();
+		if (expiredSites != null) {
+			for (ApprovedSite expired : expiredSites) {
+				approvedSiteRepository.remove(expired);
+			}
+		}
+	}
+	
+	private Predicate<ApprovedSite> isExpired = new Predicate<ApprovedSite>() {
+		@Override
+		public boolean apply(ApprovedSite input) {
+			return (input != null && input.isExpired());
+		}
+	};
+	
+	private Collection<ApprovedSite> getExpired() {
+		return Collections2.filter(approvedSiteRepository.getAll(), isExpired);
 	}
 
 }

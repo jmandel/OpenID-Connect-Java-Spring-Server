@@ -42,6 +42,8 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -58,12 +60,17 @@ import org.springframework.security.oauth2.provider.ClientDetails;
  * 
  */
 @Entity
-@Table(name="client_details")
+@Table(name = "client_details")
 @NamedQueries({
 	@NamedQuery(name = "ClientDetailsEntity.findAll", query = "SELECT c FROM ClientDetailsEntity c"),
 	@NamedQuery(name = "ClientDetailsEntity.getByClientId", query = "select c from ClientDetailsEntity c where c.clientId = :clientId")
 })
 public class ClientDetailsEntity implements ClientDetails {
+
+	/**
+	 * 
+	 */
+    private static final int DEFAULT_ID_TOKEN_VALIDITY_SECONDS = 600;
 
 	private static final long serialVersionUID = -1617727085733786296L;
 
@@ -90,15 +97,15 @@ public class ClientDetailsEntity implements ClientDetails {
 	private String sectorIdentifierUri; // sector_identifier_uri
 	private SubjectType subjectType; // subject_type
 
-	private JWSAlgorithmEmbed requestObjectSigningAlg = JWSAlgorithmEmbed.NONE; // request_object_signing_alg
+	private JWSAlgorithmEmbed requestObjectSigningAlg = null; // request_object_signing_alg
 
-	private JWSAlgorithmEmbed userInfoSignedResponseAlg = JWSAlgorithmEmbed.NONE; // user_info_signed_response_alg
-	private JWEAlgorithmEmbed userInfoEncryptedResponseAlg = JWEAlgorithmEmbed.NONE; // user_info_encrypted_response_alg
-	private JWEEncryptionMethodEmbed userInfoEncryptedResponseEnc = JWEEncryptionMethodEmbed.NONE; // user_info_encrypted_response_enc
+	private JWSAlgorithmEmbed userInfoSignedResponseAlg = null; // user_info_signed_response_alg
+	private JWEAlgorithmEmbed userInfoEncryptedResponseAlg = null; // user_info_encrypted_response_alg
+	private JWEEncryptionMethodEmbed userInfoEncryptedResponseEnc = null; // user_info_encrypted_response_enc
 
-	private JWSAlgorithmEmbed idTokenSignedResponseAlg = JWSAlgorithmEmbed.NONE; // id_token_signed_response_alg
-	private JWEAlgorithmEmbed idTokenEncryptedResponseAlg = JWEAlgorithmEmbed.NONE; // id_token_encrypted_response_alg
-	private JWEEncryptionMethodEmbed idTokenEncryptedResponseEnc = JWEEncryptionMethodEmbed.NONE; // id_token_encrypted_response_enc
+	private JWSAlgorithmEmbed idTokenSignedResponseAlg = null; // id_token_signed_response_alg
+	private JWEAlgorithmEmbed idTokenEncryptedResponseAlg = null; // id_token_encrypted_response_alg
+	private JWEEncryptionMethodEmbed idTokenEncryptedResponseEnc = null; // id_token_encrypted_response_enc
 
 	private Integer defaultMaxAge; // default_max_age
 	private Boolean requireAuthTime; // require_auth_time
@@ -120,6 +127,7 @@ public class ClientDetailsEntity implements ClientDetails {
 	private String clientDescription = ""; // human-readable description
 	private boolean reuseRefreshToken = true; // do we let someone reuse a refresh token?
 	private boolean dynamicallyRegistered = false; // was this client dynamically registered?
+	private boolean trustedRegistration = false; // was this client registered by a trusted process?
 	private boolean allowIntrospection = false; // do we let this client call the introspection endpoint?
 	private Integer idTokenValiditySeconds; //timeout for id tokens
 	private Date createdAt; // time the client was created
@@ -213,11 +221,21 @@ public class ClientDetailsEntity implements ClientDetails {
 
 	}
 
+	@PrePersist
+	@PreUpdate
+	private void prePersist() {
+		// make sure that ID tokens always time out, default to 5 minutes
+		if (getIdTokenValiditySeconds() == null) {
+			setIdTokenValiditySeconds(DEFAULT_ID_TOKEN_VALIDITY_SECONDS);
+		}
+	}	
+	
 	/**
 	 * @return the id
 	 */
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id")
 	public Long getId() {
 		return id;
 	}
@@ -269,6 +287,8 @@ public class ClientDetailsEntity implements ClientDetails {
 	}
 
 	/**
+	 * Number of seconds ID token is valid for. MUST be a positive integer, can not be null.
+	 * 
 	 * @return the idTokenValiditySeconds
 	 */
 	@Basic
@@ -299,8 +319,22 @@ public class ClientDetailsEntity implements ClientDetails {
 	public void setDynamicallyRegistered(boolean dynamicallyRegistered) {
 		this.dynamicallyRegistered = dynamicallyRegistered;
 	}
+	
+	/**
+	 * @return the trustedRegistration
+	 */
+	@Basic
+	@Column(name="trusted_registration")
+	public boolean isTrustedRegistration() {
+		return trustedRegistration;
+	}
 
-
+	/**
+	 * @param trustedRegistration the trustedRegistration to set
+	 */
+	public void setTrustedRegistration(boolean trustedRegistration) {
+		this.trustedRegistration = trustedRegistration;
+	}
 
 
 
@@ -775,7 +809,7 @@ public class ClientDetailsEntity implements ClientDetails {
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(
 			name="client_response_type",
-			joinColumns=@JoinColumn(name="response_type")
+			joinColumns=@JoinColumn(name="owner_id")
 			)
 	@Column(name="response_type")
 	public Set<String> getResponseTypes() {

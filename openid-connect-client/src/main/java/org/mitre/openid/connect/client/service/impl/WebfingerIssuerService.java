@@ -19,21 +19,24 @@
  */
 package org.mitre.openid.connect.client.service.impl;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.mitre.discovery.util.WebfingerURLNormalizer;
 import org.mitre.openid.connect.client.model.IssuerServiceResponse;
 import org.mitre.openid.connect.client.service.IssuerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
 
 import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
@@ -53,11 +56,11 @@ public class WebfingerIssuerService implements IssuerService {
 
 	private static Logger logger = LoggerFactory.getLogger(WebfingerIssuerService.class);
 
-	// pattern used to parse user input; we can't use the built-in java URI parser
-	private static final Pattern pattern = Pattern.compile("(https://|acct:|http://|mailto:)?(([^@]+)@)?([^\\?]+)(\\?([^#]+))?(#(.*))?");
-
 	// map of user input -> issuer, loaded dynamically from webfinger discover
-	private LoadingCache<NormalizedURI, String> issuers;
+	private LoadingCache<UriComponents, String> issuers;
+
+	private Set<String> whitelist = new HashSet<String>();
+	private Set<String> blacklist = new HashSet<String>();
 
 	/**
 	 * Name of the incoming parameter to check for discovery purposes.
@@ -82,7 +85,15 @@ public class WebfingerIssuerService implements IssuerService {
 		String identifier = request.getParameter(parameterName);
 		if (!Strings.isNullOrEmpty(identifier)) {
 			try {
-				String issuer = issuers.get(normalizeResource(identifier));
+				String issuer = issuers.get(WebfingerURLNormalizer.normalizeResource(identifier));
+				if (!whitelist.isEmpty() && !whitelist.contains(issuer)) {
+					throw new AuthenticationServiceException("Whitelist was nonempty, issuer was not in whitelist: " + issuer);
+				}
+
+				if (blacklist.contains(issuer)) {
+					throw new AuthenticationServiceException("Issuer was in blacklist: " + issuer);
+				}
+
 				return new IssuerServiceResponse(issuer, null, null);
 			} catch (ExecutionException e) {
 				logger.warn("Issue fetching issuer for user input: " + identifier, e);
@@ -94,58 +105,6 @@ public class WebfingerIssuerService implements IssuerService {
 			return new IssuerServiceResponse(loginPageUrl);
 		}
 	}
-
-	/**
-	 * Normalize the resource string as per OIDC Discovery.
-	 * @param identifier
-	 * @return the normalized string, or null if the string can't be normalized
-	 */
-	private NormalizedURI normalizeResource(String identifier) {
-		// try to parse the URI
-		// NOTE: we can't use the Java built-in URI class because it doesn't split the parts appropriately
-
-		if (Strings.isNullOrEmpty(identifier)) {
-			logger.warn("Can't normalize null or empty URI: " + identifier);
-			return null; // nothing we can do
-		} else {
-
-			NormalizedURI n = new NormalizedURI();
-			Matcher m = pattern.matcher(identifier);
-
-			if (m.matches()) {
-				n.scheme = m.group(1); // includes colon and maybe initial slashes
-				n.user = m.group(2); // includes at sign
-				n.hostportpath = m.group(4);
-				n.query = m.group(5); // includes question mark
-				n.hash = m.group(7); // includes hash mark
-
-				// normalize scheme portion
-				if (Strings.isNullOrEmpty(n.scheme)) {
-					if (!Strings.isNullOrEmpty(n.user)) {
-						// no scheme, but have a user, assume acct:
-						n.scheme = "acct:";
-					} else {
-						// no scheme, no user, assume https://
-						n.scheme = "https://";
-					}
-				}
-
-				n.source = Strings.nullToEmpty(n.scheme) +
-						Strings.nullToEmpty(n.user) +
-						Strings.nullToEmpty(n.hostportpath) +
-						Strings.nullToEmpty(n.query); // note: leave fragment off
-
-				return n;
-			} else {
-				logger.warn("Parser couldn't match input: " + identifier);
-				return null;
-			}
-
-		}
-
-
-	}
-
 
 	/**
 	 * @return the parameterName
@@ -176,30 +135,67 @@ public class WebfingerIssuerService implements IssuerService {
 		this.loginPageUrl = loginPageUrl;
 	}
 
+	/**
+	 * @return the whitelist
+	 */
+	public Set<String> getWhitelist() {
+		return whitelist;
+	}
+
+	/**
+	 * @param whitelist the whitelist to set
+	 */
+	public void setWhitelist(Set<String> whitelist) {
+		this.whitelist = whitelist;
+	}
+
+	/**
+	 * @return the blacklist
+	 */
+	public Set<String> getBlacklist() {
+		return blacklist;
+	}
+
+	/**
+	 * @param blacklist the blacklist to set
+	 */
+	public void setBlacklist(Set<String> blacklist) {
+		this.blacklist = blacklist;
+	}
 
 	/**
 	 * @author jricher
 	 *
 	 */
-	private class WebfingerIssuerFetcher extends CacheLoader<NormalizedURI, String> {
+	private class WebfingerIssuerFetcher extends CacheLoader<UriComponents, String> {
 		private HttpClient httpClient = new DefaultHttpClient();
 		private HttpComponentsClientHttpRequestFactory httpFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 		private JsonParser parser = new JsonParser();
 
 		@Override
-		public String load(NormalizedURI key) throws Exception {
+		public String load(UriComponents key) throws Exception {
 
 			RestTemplate restTemplate = new RestTemplate(httpFactory);
 			// construct the URL to go to
 
-			//String url = "https://" + key.hostportpath + "/.well-known/webfinger?resource="
-			String scheme = key.scheme;
-			if (!Strings.isNullOrEmpty(scheme) && !scheme.startsWith("http")) {
-				// do discovery on http or https URLs
+			// preserving http scheme is strictly for demo system use only.
+			String scheme = key.getScheme();
+			if (!Strings.isNullOrEmpty(scheme) && scheme.equals("http")) {
+				scheme = "http://"; // add on colon and slashes.
+				logger.warn("Webfinger endpoint MUST use the https URI scheme.");
+			} else {
 				scheme = "https://";
 			}
-			URIBuilder builder = new URIBuilder(scheme + key.hostportpath + "/.well-known/webfinger" + Strings.nullToEmpty(key.query));
-			builder.addParameter("resource", key.source);
+
+			// do a webfinger lookup
+			URIBuilder builder = new URIBuilder(scheme
+					+ key.getHost()
+					+ (key.getPort() >= 0 ? ":" + key.getPort() : "")
+					+ Strings.nullToEmpty(key.getPath())
+					+ "/.well-known/webfinger"
+					+ (Strings.isNullOrEmpty(key.getQuery()) ? "" : "?" + key.getQuery())
+					);
+			builder.addParameter("resource", key.toString());
 			builder.addParameter("rel", "http://openid.net/specs/connect/1.0/issuer");
 
 			// do the fetch
@@ -230,30 +226,19 @@ public class WebfingerIssuerService implements IssuerService {
 			}
 
 			// we couldn't find it
-			logger.warn("Couldn't find issuer");
-			return null;
+
+			if (key.getScheme().equals("http") || key.getScheme().equals("https")) {
+				// if it looks like HTTP then punt and return the input
+				logger.warn("Returning normalized input string as issuer, hoping for the best: " + key.toString());
+				return key.toString();
+			} else {
+				// if it's not HTTP, give up
+				logger.warn("Couldn't find issuer: " + key.toString());
+				return null;
+			}
+
 		}
 
 	}
-
-
-	/**
-	 * Simple data shuttle class to represent the parsed components of a URI.
-	 * 
-	 * @author jricher
-	 *
-	 */
-	private class NormalizedURI {
-
-		public String scheme;
-		public String user;
-		public String hostportpath;
-		public String query;
-		public String hash;
-		public String source;
-
-
-	}
-
 
 }

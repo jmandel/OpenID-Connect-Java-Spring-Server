@@ -10,26 +10,27 @@ START TRANSACTION;
 -- Insert user information into the temporary tables. To add users to the HSQL database, edit things here.
 -- 
 
+INSERT INTO trusted_registry_TEMP (uri) VALUES
+  ('https://bbplus-static-registry.aws.af.cm'),
+  ('http://blue-button.github.com/static-registry-example');
+ 
 INSERT INTO users_TEMP (username, password, enabled) VALUES
-  ('jricher', 'password', true),
-  ('aanganes','password',true),
-  ('mfranklin','password',true),
-  ('srmoore','password',true);
+  ('demo', 'demo', true),
+  ('admin','password',true),
+  ('user','password',true);
+
 
 INSERT INTO authorities_TEMP (username, authority) VALUES
-  ('jricher', 'ROLE_ADMIN'),
-  ('aanganes','ROLE_ADMIN'),
-  ('jricher', 'ROLE_USER'),
-  ('aanganes','ROLE_USER'),
-  ('mfranklin','ROLE_USER'),
-  ('srmoore','ROLE_USER');
+  ('admin','ROLE_ADMIN'),
+  ('admin','ROLE_USER'),
+  ('demo','ROLE_USER'),
+  ('user','ROLE_USER');
     
 -- By default, the username column here has to match the username column in the users table, above
 INSERT INTO user_info_TEMP (sub, preferred_username, name, email, email_verified) VALUES
-  ('jricher', 'jricher', 'Justin Richer', 'jricher@mitre.org', false),
-  ('aanganes', 'aanganes', 'Amanda Anganes', 'aanganes@mitre.org', false),
-  ('mfranklin', 'mfranklin', 'Matt Franklin', 'mfranklin@mitre.org', false),
-  ('srmoore', 'srmoore', 'Steve Moore', 'srmoore@mitre.org', false);
+  ('admin','admin','Demo Admin','admin@example.com',false),
+  ('user','user','Demo User','user@example.com',false),
+  ('demo','demo','Demo User','demo-user@example.com',false);
 
  
 --
@@ -54,7 +55,12 @@ MERGE INTO user_info
   WHEN NOT MATCHED THEN 
     INSERT (sub, preferred_username, name, email, email_verified) VALUES (vals.sub, vals.preferred_username, vals.name, vals.email, vals.email_verified);
 
-    
+MERGE INTO trusted_registry
+  USING (SELECT uri FROM trusted_registry_TEMP) AS vals(uri)
+  ON vals.uri = trusted_registry.uri
+  WHEN NOT MATCHED THEN
+    INSERT (uri) VALUES(vals.uri);
+
 -- 
 -- Close the transaction and turn autocommit back on
 -- 

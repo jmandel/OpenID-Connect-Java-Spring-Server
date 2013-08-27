@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.Set;
 
 import javax.persistence.Basic;
+import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -32,9 +33,14 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.Transient;
+
+import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
+
+import com.google.common.collect.Sets;
 
 @Entity
 @Table(name="approved_site")
@@ -71,7 +77,8 @@ public class ApprovedSite {
 	// If this AP is a WS, link to the WS
 	private WhitelistedSite whitelistedSite;
 
-	// TODO: should we store the OAuth2 tokens and IdTokens here?
+	//Link to any access tokens approved through this stored decision
+	private Set<OAuth2AccessTokenEntity> approvedAccessTokens = Sets.newHashSet();
 
 	/**
 	 * Empty constructor
@@ -85,6 +92,7 @@ public class ApprovedSite {
 	 */
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id")
 	public Long getId() {
 		return id;
 	}
@@ -237,4 +245,16 @@ public class ApprovedSite {
 		}
 	}
 
+	@OneToMany(cascade=CascadeType.ALL, fetch=FetchType.EAGER)
+	@JoinColumn(name="approved_site_id")
+	public Set<OAuth2AccessTokenEntity> getApprovedAccessTokens() {
+		return approvedAccessTokens;
+	}
+
+	/**
+	 * @param approvedAccessTokens the approvedAccessTokens to set
+	 */
+	public void setApprovedAccessTokens(Set<OAuth2AccessTokenEntity> approvedAccessTokens) {
+		this.approvedAccessTokens = approvedAccessTokens;
+	}
 }

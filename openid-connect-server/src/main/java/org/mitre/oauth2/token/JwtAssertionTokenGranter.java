@@ -29,11 +29,14 @@ import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.oauth2.service.OAuth2TokenEntityService;
 import org.mitre.openid.connect.config.ConfigurationPropertiesBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidTokenException;
-import org.springframework.security.oauth2.provider.AuthorizationRequest;
+import org.springframework.security.oauth2.provider.ClientDetails;
+import org.springframework.security.oauth2.provider.OAuth2RequestFactory;
+import org.springframework.security.oauth2.provider.TokenRequest;
 import org.springframework.security.oauth2.provider.token.AbstractTokenGranter;
 import org.springframework.stereotype.Component;
 
@@ -62,8 +65,8 @@ public class JwtAssertionTokenGranter extends AbstractTokenGranter {
 	private ConfigurationPropertiesBean config;
 
 	@Autowired
-	public JwtAssertionTokenGranter(OAuth2TokenEntityService tokenServices, ClientDetailsEntityService clientDetailsService) {
-		super(tokenServices, clientDetailsService, grantType);
+	public JwtAssertionTokenGranter(OAuth2TokenEntityService tokenServices, ClientDetailsEntityService clientDetailsService, OAuth2RequestFactory requestFactory) {
+		super(tokenServices, clientDetailsService, requestFactory, grantType);
 		this.tokenServices = tokenServices;
 	}
 
@@ -71,17 +74,14 @@ public class JwtAssertionTokenGranter extends AbstractTokenGranter {
 	 * @see org.springframework.security.oauth2.provider.token.AbstractTokenGranter#getOAuth2Authentication(org.springframework.security.oauth2.provider.AuthorizationRequest)
 	 */
 	@Override
-	protected OAuth2AccessToken getAccessToken(AuthorizationRequest authorizationRequest) throws AuthenticationException, InvalidTokenException {
+	protected OAuth2AccessToken getAccessToken(ClientDetails client, TokenRequest tokenRequest) throws AuthenticationException, InvalidTokenException {
 		// read and load up the existing token
-		String incomingTokenValue = authorizationRequest.getAuthorizationParameters().get("assertion");
+		String incomingTokenValue = tokenRequest.getRequestParameters().get("assertion");
 		OAuth2AccessTokenEntity incomingToken = tokenServices.readAccessToken(incomingTokenValue);
-
-		ClientDetailsEntity client = incomingToken.getClient();
-
 
 		if (incomingToken.getScope().contains(OAuth2AccessTokenEntity.ID_TOKEN_SCOPE)) {
 
-			if (!client.getClientId().equals(authorizationRequest.getClientId())) {
+			if (!client.getClientId().equals(tokenRequest.getClientId())) {
 				throw new InvalidClientException("Not the right client for this token");
 			}
 
@@ -103,12 +103,23 @@ public class JwtAssertionTokenGranter extends AbstractTokenGranter {
 					// copy over all existing claims
 					JWTClaimsSet claims = new JWTClaimsSet(idToken.getJWTClaimsSet());
 
-					// update expiration and issued-at claims
-					if (client.getIdTokenValiditySeconds() != null) {
-						Date expiration = new Date(System.currentTimeMillis() + (client.getIdTokenValiditySeconds() * 1000L));
-						claims.setExpirationTime(expiration);
-						newIdTokenEntity.setExpiration(expiration);
+					if (client instanceof ClientDetailsEntity) {
+
+						ClientDetailsEntity clientEntity = (ClientDetailsEntity) client;
+
+						// update expiration and issued-at claims
+						if (clientEntity.getIdTokenValiditySeconds() != null) {
+							Date expiration = new Date(System.currentTimeMillis() + (clientEntity.getIdTokenValiditySeconds() * 1000L));
+							claims.setExpirationTime(expiration);
+							newIdTokenEntity.setExpiration(expiration);
+						}
+
+					} else {
+						//This should never happen
+						logger.fatal("SEVERE: Client is not an instance of OAuth2AccessTokenEntity.");
+						throw new BadCredentialsException("SEVERE: Client is not an instance of ClientDetailsEntity; JwtAssertionTokenGranter cannot process this request.");
 					}
+
 					claims.setIssueTime(new Date());
 
 

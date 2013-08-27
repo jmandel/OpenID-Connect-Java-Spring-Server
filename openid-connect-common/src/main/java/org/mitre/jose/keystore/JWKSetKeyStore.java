@@ -19,10 +19,13 @@
  */
 package org.mitre.jose.keystore;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.ParseException;
 import java.util.List;
 
-import org.springframework.beans.factory.InitializingBean;
+import javax.annotation.PostConstruct;
+
 import org.springframework.core.io.Resource;
 
 import com.google.common.base.Charsets;
@@ -34,7 +37,7 @@ import com.nimbusds.jose.jwk.JWKSet;
  * @author jricher
  *
  */
-public class JWKSetKeyStore implements InitializingBean {
+public class JWKSetKeyStore {
 
 	private JWKSet jwkSet;
 
@@ -48,22 +51,24 @@ public class JWKSetKeyStore implements InitializingBean {
 		this.jwkSet = jwkSet;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet()
-	 */
-	@Override
-	public void afterPropertiesSet() throws Exception {
+	@PostConstruct
+	private void initializeJwkSet() {
 
 		if (jwkSet == null) {
 			if (location != null) {
 
 				if (location.exists() && location.isReadable()) {
 
-					// read in the file from disk
-					String s = CharStreams.toString(new InputStreamReader(location.getInputStream(), Charsets.UTF_8));
+					try {
+	                    // read in the file from disk
+	                    String s = CharStreams.toString(new InputStreamReader(location.getInputStream(), Charsets.UTF_8));
 
-					// parse it into a jwkSet object
-					jwkSet = JWKSet.parse(s);
+	                    // parse it into a jwkSet object
+	                    jwkSet = JWKSet.parse(s);
+                    } catch (IOException e) {
+                    	throw new IllegalArgumentException("Key Set resource could not be read: " + location);
+                    } catch (ParseException e) {
+                    	throw new IllegalArgumentException("Key Set resource could not be parsed: " + location);                    }
 
 				} else {
 					throw new IllegalArgumentException("Key Set resource could not be read: " + location);
@@ -107,6 +112,9 @@ public class JWKSetKeyStore implements InitializingBean {
 	 * Get the list of keys in this keystore. This is a passthrough to the underlying JWK Set
 	 */
 	public List<JWK> getKeys() {
+		if (jwkSet == null) {
+			initializeJwkSet();
+		}
 		return jwkSet.getKeys();
 	}
 

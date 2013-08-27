@@ -19,10 +19,8 @@
  */
 package org.mitre.openid.connect.client.service;
 
-import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.RegisteredClient;
 import org.mitre.openid.connect.config.ServerConfiguration;
-import org.springframework.security.oauth2.provider.ClientDetails;
 
 /**
  * @author jricher

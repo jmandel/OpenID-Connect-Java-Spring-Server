@@ -18,8 +18,8 @@ package org.mitre.openid.connect.client;
 
 import java.util.Collection;
 
+import org.mitre.openid.connect.model.OIDCAuthenticationToken;
 import org.mitre.openid.connect.model.UserInfo;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -33,22 +33,11 @@ import com.google.common.collect.Lists;
  * @author nemonik
  * 
  */
-public class OIDCAuthenticationProvider implements
-AuthenticationProvider, InitializingBean {
+public class OIDCAuthenticationProvider implements AuthenticationProvider {
 
 	private UserInfoFetcher userInfoFetcher = new UserInfoFetcher();
 
 	private GrantedAuthoritiesMapper authoritiesMapper = new NamedAdminAuthoritiesMapper();
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.springframework.beans.factory.InitializingBean#afterPropertiesSet()
-	 */
-	@Override
-	public void afterPropertiesSet() throws Exception {
-	}
 
 	/*
 	 * (non-Javadoc)
@@ -65,7 +54,6 @@ AuthenticationProvider, InitializingBean {
 		}
 
 		if (authentication instanceof OIDCAuthenticationToken) {
-
 
 			OIDCAuthenticationToken token = (OIDCAuthenticationToken) authentication;
 

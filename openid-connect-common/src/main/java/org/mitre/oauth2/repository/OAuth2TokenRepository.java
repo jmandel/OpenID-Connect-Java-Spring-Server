@@ -17,6 +17,7 @@
 package org.mitre.oauth2.repository;
 
 import java.util.List;
+import java.util.Set;
 
 import org.mitre.oauth2.model.ClientDetailsEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -49,15 +50,12 @@ public interface OAuth2TokenRepository {
 
 	public List<OAuth2RefreshTokenEntity> getRefreshTokensForClient(ClientDetailsEntity client);
 
-	public List<OAuth2AccessTokenEntity> getExpiredAccessTokens();
-
-	public List<OAuth2RefreshTokenEntity> getExpiredRefreshTokens();
-
 	public OAuth2AccessTokenEntity getByAuthentication(OAuth2Authentication auth);
 
-	/**
-	 * @return
-	 */
 	public OAuth2AccessTokenEntity getAccessTokenForIdToken(OAuth2AccessTokenEntity idToken);
+
+	public Set<OAuth2AccessTokenEntity> getAllAccessTokens();
+
+	public Set<OAuth2RefreshTokenEntity> getAllRefreshTokens();
 
 }
