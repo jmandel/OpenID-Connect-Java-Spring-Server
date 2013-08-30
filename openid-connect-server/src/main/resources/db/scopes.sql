@@ -18,16 +18,19 @@ INSERT INTO system_scope_TEMP (scope, description, icon, allow_dyn_reg, default_
   ('phone', 'telephone number', 'bell', true, true),
   ('offline_access', 'offline access', 'time', true, true);
   
-
+INSERT INTO system_scope_TEMP (scope, description, icon, allow_dyn_reg, default_scope, structured, structured_param_description) VALUES
+  ('summary', 'fetch a clinical summary', 'user', true, true, true, 'patient pseudo-id'),
+  ('search', 'search for clinical documents', 'user', true, true, true, 'patient pseudo-id');
+ 
 --
 -- Merge the temporary scopes safely into the database. This is a two-step process to keep scopes from being created on every startup with a persistent store.
 --
 
 MERGE INTO system_scope
-	USING (SELECT scope, description, icon, allow_dyn_reg, default_scope FROM system_scope_TEMP) AS vals(scope, description, icon, allow_dyn_reg, default_scope)
+	USING (SELECT scope, description, icon, allow_dyn_reg, default_scope, structured, structured_param_description FROM system_scope_TEMP) AS vals(scope, description, icon, allow_dyn_reg, default_scope, structured, structured_param_description)
 	ON vals.scope = system_scope.scope
 	WHEN NOT MATCHED THEN
-	  INSERT (scope, description, icon, allow_dyn_reg, default_scope) VALUES(vals.scope, vals.description, vals.icon, vals.allow_dyn_reg, vals.default_scope);
+	  INSERT (scope, description, icon, allow_dyn_reg, default_scope, structured, structured_param_description) VALUES(vals.scope, vals.description, vals.icon, vals.allow_dyn_reg, vals.default_scope, structured, structured_param_description);
 
 COMMIT;
 

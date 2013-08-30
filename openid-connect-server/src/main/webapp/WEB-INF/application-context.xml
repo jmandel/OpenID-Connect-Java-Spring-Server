@@ -107,8 +107,8 @@
 		<security:expression-handler ref="oauthWebExpressionHandler" />
 	</security:http>
 	
-	<security:http pattern="/introspect**" entry-point-ref="oauthAuthenticationEntryPoint" create-session="stateless">
-		<security:custom-filter ref="clientCredentialsIntrospectionEndpointFilter" before="BASIC_AUTH_FILTER" />
+	<security:http pattern="/introspect**" authentication-manager-ref="clientAuthenticationManager" create-session="stateless">
+                <security:http-basic entry-point-ref="oauthAuthenticationEntryPoint" />
 	</security:http>
 
 	<security:http pattern="/revoke**" entry-point-ref="oauthAuthenticationEntryPoint" create-session="stateless">
