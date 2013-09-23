@@ -14,6 +14,7 @@ INSERT INTO client_details_TEMP (client_id, client_secret, client_name, dynamica
 	('client', 'secret', 'Test Client', false, null, 3600, 600, true);
 
 INSERT INTO client_scope_TEMP (owner_id, scope) VALUES
+	('client', 'fhir-complete'),
 	('client', 'summary'),
 	('client', 'search'),
 	('client', 'phone');

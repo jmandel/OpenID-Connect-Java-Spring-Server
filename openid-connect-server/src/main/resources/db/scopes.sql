@@ -16,6 +16,7 @@ INSERT INTO system_scope_TEMP (scope, description, icon, allow_dyn_reg, default_
   ('email', 'email address', 'envelope', true, true, false, NULL),
   ('address', 'physical address', 'home', true, true, false, NULL),
   ('phone', 'telephone number', 'bell', true, true, false, NULL),
+  ('fhir-complete', 'FHIR Complete access', 'circle-arrow-down', true, true, false, NULL),
   ('search', 'BB+ Document Search', 'circle-arrow-down', true, true, true, 'Which Record? (Optional.)'),
   ('summary', 'BB+ Clinical Summary', 'circle-arrow-down', true, true, true, 'Which Record? (Optional.)');
   
