@@ -12,7 +12,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BBTrustedRegistrationValidator implements TrustedRegistrationValidator {
+
+	private static final Logger logger = LoggerFactory.getLogger(BBTrustedRegistrationValidator.class);
 
 	@Autowired
 	private TrustedRegistryService registries;
@@ -20,12 +25,14 @@ public class BBTrustedRegistrationValidator implements TrustedRegistrationValida
 	@Override
 	public boolean validate(String postBody, Authentication auth) {
 
+		logger.error("Inspect a prereg token...");
 		// BlueButton permits open registration, so no auth = A-OK.
 		if (auth  == null || !auth.isAuthenticated())
 			return false;
 		
 		PreregistrationToken preregToken = (PreregistrationToken) auth;
 		String issuer = preregToken.getJwt().getPayload().toJSONObject().get("iss").toString();
+		logger.error("got a prereg token with issuer: " + issuer);
 		
 		if (!registries.isTrusted(issuer)){
 			throw new AuthenticationServiceException(

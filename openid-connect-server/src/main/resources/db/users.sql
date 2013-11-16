@@ -11,6 +11,8 @@ START TRANSACTION;
 -- 
 
 INSERT INTO trusted_registry_TEMP (uri) VALUES
+  ('http://pilots.fhir.me'),
+  ('https://pilots.fhir.me'),
   ('https://bbplus-static-registry.aws.af.cm'),
   ('http://blue-button.github.com/static-registry-example');
  
