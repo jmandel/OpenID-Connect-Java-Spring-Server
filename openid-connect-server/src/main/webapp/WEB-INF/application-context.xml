@@ -87,7 +87,8 @@
 		authentication-manager-ref="clientAuthenticationManager"
 		entry-point-ref="oauthAuthenticationEntryPoint">
 		
-		<security:intercept-url pattern="/token" access="IS_AUTHENTICATED_FULLY" />
+		<security:intercept-url pattern="/token" access="IS_AUTHENTICATED_FULLY" method="POST"/>
+		<security:intercept-url pattern="/token" access="IS_AUTHENTICATED_FULLY" method="GET"/>
 		<security:anonymous enabled="false" />
 		<security:http-basic entry-point-ref="oauthAuthenticationEntryPoint" />
 		<!-- include this only if you need to authenticate clients via request parameters -->
