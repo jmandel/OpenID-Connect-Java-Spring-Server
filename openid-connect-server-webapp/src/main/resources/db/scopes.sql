@@ -16,6 +16,9 @@ INSERT INTO system_scope_TEMP (scope, description, icon, allow_dyn_reg, default_
   ('email', 'email address', 'envelope', true, true, false, null),
   ('address', 'physical address', 'home', true, true, false, null),
   ('phone', 'telephone number', 'bell', true, true, false, null),
+  ('search', 'FHIR search', 'user', true, false, true, 'Search for resources belonging to patient'),
+  ('summary', 'FHIR summary', 'user', true, false, true, 'Access clinical summery for patient'),
+  ('smart', 'SMART', 'user', true, false, true, 'Details of SMART authorizationn'),
   ('offline_access', 'offline access', 'time', true, true, false, null);
   
 --
