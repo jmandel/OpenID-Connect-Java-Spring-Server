@@ -39,6 +39,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -47,6 +48,7 @@ import javax.persistence.Transient;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2RefreshToken;
 
+import com.google.common.collect.Sets;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTParser;
 
@@ -89,6 +91,8 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 
 	private Set<String> scope;
 
+	private Set<LaunchContextEntity> launchContextParams = Sets.newHashSet();
+	
 	/**
 	 * Create a new, blank access token
 	 */
@@ -114,7 +118,8 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 	}
 
 	/**
-	 * Get all additional information to be sent to the serializer. Inserts a copy of the IdToken (in JWT String form).
+	 * Get all additional information to be sent to the serializer. Inserts a copy of the IdToken (in JWT String form)
+	 * and launch context params.
 	 */
 	@Override
 	@Transient
@@ -122,6 +127,11 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 		Map<String, Object> map = new HashMap<String, Object>(); //super.getAdditionalInformation();
 		if (getIdToken() != null) {
 			map.put(ID_TOKEN_FIELD_NAME, getIdTokenString());
+		}
+		if (getLaunchContext() != null) {
+			for (LaunchContextEntity cparam : getLaunchContext()){
+				map.put(cparam.getName(), cparam.getValue());				
+			}
 		}
 		return map;
 	}
@@ -250,6 +260,19 @@ public class OAuth2AccessTokenEntity implements OAuth2AccessToken {
 		return idToken;
 	}
 
+	@OneToMany(cascade=CascadeType.ALL, fetch=FetchType.EAGER)
+	@JoinColumn(name="access_token_id")
+	public Set<LaunchContextEntity> getLaunchContext() {
+		return launchContextParams;
+	}
+
+    /**
+     * @param launchContetParams the LaunchContextParams to set
+     */
+    public void setLaunchContext(Set<LaunchContextEntity> launchContextParams) {
+            this.launchContextParams = launchContextParams;
+    }
+	
 	/**
 	 * @param idToken the idToken to set
 	 */

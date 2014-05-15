@@ -236,6 +236,8 @@
 							</c:otherwise>
 						</c:choose>"?
 				</h3>
+				<input name="context_id" value="${ context_id }" type="text" />
+
 				<input id="user_oauth_approval" name="user_oauth_approval" value="true" type="hidden" /> 
 				<input name="csrf" value="${ csrf }" type="hidden" />
 				<input name="authorize" value="Authorize" type="submit"

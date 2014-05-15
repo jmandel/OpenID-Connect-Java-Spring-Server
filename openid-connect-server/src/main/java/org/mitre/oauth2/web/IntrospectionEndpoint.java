@@ -88,7 +88,6 @@ public class IntrospectionEndpoint {
 
 			tokenClient = access.getClient();
 			scopes = access.getScope();
-
 			token = access;
 
 		} catch (InvalidTokenException e) {

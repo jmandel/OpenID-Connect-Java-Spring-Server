@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.common.exceptions.InvalidClientException;
 import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
@@ -197,8 +198,12 @@ public class DefaultOAuth2ProviderTokenService implements OAuth2TokenEntityServi
 				token.setRefreshToken(refreshToken);
 			}
 
-			tokenEnhancer.enhance(token, authentication);
-
+			// TODO enhance is supposed to return a new token, so this should be reassignment...
+			// need to figure out the right exception to use.
+			token = (OAuth2AccessTokenEntity) tokenEnhancer.enhance(token, authentication);
+			if (token == null) {
+				return token;
+			}
 			tokenRepository.saveAccessToken(token);
 
 			//Add approved site reference, if any

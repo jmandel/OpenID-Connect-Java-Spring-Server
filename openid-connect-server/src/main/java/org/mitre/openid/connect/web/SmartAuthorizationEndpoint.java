@@ -81,7 +81,9 @@ public class SmartAuthorizationEndpoint extends AuthorizationEndpoint implements
 		 // Plan: for SMART requests that need patient-level context, redirect to a patient-picker, passing CSRF token
 		 // For SMART request that don't need patient-level context, redirect to a simplified approval screen
 		 // be sure to have automatic approval of the trusted context-picking app, so it always knows the current user.
-		return new ModelAndView(new RedirectView(
-					"http://localhos/index.html#" + authorizationRequest.getExtensions().get("csrf")));
+		//return new ModelAndView(new RedirectView(
+		//			"http://localhos/index.html#" + authorizationRequest.getExtensions().get("csrf")));
+		 return mv;
 	}
+	
 }
