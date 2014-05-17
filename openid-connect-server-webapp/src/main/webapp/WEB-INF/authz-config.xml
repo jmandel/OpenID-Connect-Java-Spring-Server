@@ -31,12 +31,12 @@
 
 
 	<!--  
-	TODO: figure out how to alias these so there's just *one* bean and auto-wire it to the
-	various consumers that want it, even though those consumers each call it by a different name...
+	Alias x3 so there's just *one* bean that auto-wires to the various consumers
+	that want it, even though those consumers each call it by a different name...
 	 -->
-	<bean id="oAuth2RequestFactory" class="org.mitre.openid.connect.SmartOAuth2RequestFactory" />
-	<bean id="authRequestFactory" class="org.mitre.openid.connect.SmartOAuth2RequestFactory" />
-	<bean id="requestFactory" class="org.mitre.openid.connect.SmartOAuth2RequestFactory"  />
+	<bean id="oAuth2RequestFactory" 
+		class="org.mitre.openid.connect.SmartOAuth2RequestFactory" 
+		name="authRequestFactory, requestFactory"/>
 	
 	<oauth:authorization-server 
 		client-details-service-ref="defaultOAuth2ClientDetailsEntityService"

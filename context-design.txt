@@ -1,0 +1,144 @@
+
+Client ID
+3ef092aa-eb6d-4a2d-8763-de33b95bb55a
+Client Secret
+JJAe8JvGbb9ntRS0oI1UmObPuaSgaFO7vstfe1gr4HG26i413UFqJdZE79AlSghdOZjnL-YsHYx_vJXdVXvFKA
+Client Configuration URL
+https://oidc.mit.edu/register/3ef092aa-eb6d-4a2d-8763-de33b95bb55a
+Registration Access Token
+eyJhbGciOiJSUzI1NiJ9.eyJhdWQiOlsiM2VmMDkyYWEtZWI2ZC00YTJkLTg3NjMtZGUzM2I5NWJiNTVhIl0sImlzcyI6Imh0dHBzOlwvXC9vaWRjLm1pdC5lZHVcLyIsImp0aSI6Ijg3ZDAyNThiLTYzNDktNGVhYy1hZTYyLTY0MTc0YjVjYzg2MCIsImlhdCI6MTQwMDE4NDAyNH0.JTOQHruCvtdx-7Djl6VhglMm2AU2RVJOyu2-AqxU9h2LY8Yb6poD6ht88-G8XReT_CU_tIis1oU53p9VB_tJ4D9c9LsJzPRHV9W83vUDBZAY8yOBWem5iCaGaHmUsMMKqFaC4ErBdw85iXGNieNZJcTy_aMpA3_O9fPlb-Hx-RHUblHH8Bu3coCoYRuAM79Mm92vg-wyZTJp8hlUtPAjO-YJ3IBho9XIQctww8ZSgUxCJwctCs99xqYSFI2yHrbKLWM7tnBu_DeP96wTbCvcS1SyXkG0AnxnnAPkrvQeFmOLQLyCuSGV5kMhaDbqpFN8lPRBmIc0h4Krk2v4sLJ-nw
+
+---
+
+The app asks for authorization via:
+
+### 1. EHR asks BP App to launch via:
+
+https://bp-app/launch?
+  launch_id=123&
+  fhir_server=https://fhir-server
+
+1. We need a "rececent patients" service returning:
+# Recent patients:[{
+id: 123,
+ display: "josh",
+ time: 2014-010-4210@10:50am
+}]
+
+2. We need a scope to request access to that sevice.
+
+
+
+### 2. BP App initiates authorization request via:
+https://fhir-server/authorize?
+  response_type=code&
+  prompt=none&
+  scope=
+    launch:123 launch/patient launch/encounter
+    user/services/RecentPatients       # A way to learn when context may have changed
+    patient/resources/Observation.read patient/resources/Patient.read
+    openid profile
+  redirect_uri=https//bp-app/post-auth
+
+### 3. On approval and code exchange, EHR responds 
+
+Response includes access token and context parameters:
+{
+    "access_token": "xyx-123",
+    "token_type": "Bearer",
+    "expires_in": 3599,
+    "scope": "patient/Observation.read patient/Patient.read",
+    "launch_patient": "123",
+    "launch_encounter": "456",
+    "launch_some_extra_thing": "custom extension here",
+    "id_token": {
+      sub: "nschwertener"
+      iss "https://fhir.smartplatofmr.org"
+      given: "nikoal",
+      fhir_practioenr_id: "123"
+    }
+}
+
+## Appointment manage app asks for:
+https://fhir-server/authorize?
+  state=abc&
+  scope="openid user/Appointment.read user/Appointment.write"
+  context_id=abc
+
+## FHIR Starter
+https://fhir-server/authorize?
+  state=abc&
+  scope="openid user/Patient.read launch"
+
+---
+
+1. Who are the valid users and how do they link back to FHIR practitioners?
+  
+ * LDAP server exposes users, each with a unique ID
+ * Users can have a Practitioner or a Patient role
+ * Well-defined mapping from LDAP user uids --> /Practitioner/:uid or /Patient/:uid
+
+2. Initially this will be mocked with the following assumptions:
+
+ * Data pre-loaded into a simple MITREid Connect db
+ * All users will be "Practitioners" implicitly
+
+3. fhir-starter relies on userinfo data from the auth server.
+   fhir-starter is whitelisted for the "openid user/Patient.read lanch" scopes
+
+4. When MiC gets an authorization request, handling looks like:
+
+ * If whitelisted, approve and done.
+
+ * If context_id is set, call /sof/_services/smart/Context?context_id=123 -->
+   {
+     user: uid,
+     context_patient: "123",
+     context_encounter: "456",
+     context_extra: "whatever"
+   }
+
+   Check to ensure uid == currently authenticated principal.
+   If so, display approval screen.
+
+ * If context_id is not set and context_required exists, redirect to /sof/_services/smart/EstablishContext including all authentication parameters. It will call back later.
+
+---
+
+Development plan:
+
+Phase 1: Context Service in API server (smart-on-fhir  - should rename `api-server`)
+
+[ ] Update smart-on-fhir to add a new LaunchContext domain object.
+    Add a service hosted at _services/smart/LaunchContext
+
+    Apps with the "launch" scope can POST new LaunchContext entries:
+    {
+      uid:  # server adds this field, with uid of authenticated user
+      context_id: # server adds this field (a random identifier)
+      context_*: app provides these fields: a set of context vars for the launch
+    }
+
+    Server should refuse to create a context that's not "allowed" for a user.
+    E.g. if the user is a patient, she can only have "context_patient: her_own_id"
+
+[ ]  MiC can GET a LaunchContext entry at _sservices/smart/LaunchContext/:id
+
+Phase 2: Use of Context Service in App Launcher (fhir-starter)
+
+[ ] Allow a user to sign in (or, to start, just mock a fixed uid).
+[ ] When launching a new app, update the launch button to:
+    1. POST a new context to _services/smart/LaunchContext
+    2. Grab the context_id
+    3. Open a new window pointing at that http://app/launch?context_id=:id
+
+Phase 3: MiC authorization support for context in request + access token response
+
+[ ] Update Authorization endpoint in MiC to fetch context values given an ID,
+and to pre-associate these with an AuthorizationRequest via .exensions()
+
+[ ] These are not modifiable: in fact, ApproveOrDeny doesn't even submit them.
+They're strictly copied over from the original AuthorizationReqiest.
+
+[ ] On approval, MiC bakes these context parameters into the AccessToken. This will require modifications to the AccessToken entity definitions, etc. Sigh...
+

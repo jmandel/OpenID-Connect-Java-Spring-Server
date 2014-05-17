@@ -22,6 +22,11 @@ INSERT INTO client_scope_TEMP (owner_id, scope) VALUES
 	('client', 'search'),
 	('client', 'summary'),
 	('client', 'smart'),
+	('client', 'launch'),
+	('client', 'launch/patieht'),
+	('client', 'launch/encounter'),
+	('client', 'launch/other'),
+	('client', 'smart'),
 	('client', 'offline_access');
 
 INSERT INTO client_redirect_uri_TEMP (owner_id, redirect_uri) VALUES

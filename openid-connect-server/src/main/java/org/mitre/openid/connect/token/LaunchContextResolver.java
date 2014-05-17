@@ -1,11 +1,11 @@
 package org.mitre.openid.connect.token;
 
+import java.io.Serializable;
+import java.util.Map;
 import java.util.Set;
 
 import org.mitre.oauth2.model.LaunchContextEntity;
 
 public interface LaunchContextResolver {
-	
-	public Set<LaunchContextEntity> resolve(Set<String> required, Set<String> optional, String contextId);
-
+	public Serializable resolve(String launchId, Map<String,String> needs) throws NeedUnmetException;
 }

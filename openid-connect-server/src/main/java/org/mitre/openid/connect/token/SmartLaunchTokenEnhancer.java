@@ -1,8 +1,11 @@
 package org.mitre.openid.connect.token;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.mitre.oauth2.model.LaunchContextEntity;
 import org.mitre.oauth2.model.OAuth2AccessTokenEntity;
@@ -28,31 +31,30 @@ public class SmartLaunchTokenEnhancer extends ConnectTokenEnhancer {
 		}				
 	};
 
+
+	Function<Entry<String,String>, LaunchContextEntity> toLaunchContextEntity = new Function<Entry<String,String>, LaunchContextEntity>() {
+		@Override
+		public LaunchContextEntity apply(Entry<String, String> input) {
+			LaunchContextEntity e = new LaunchContextEntity();
+			e.setName(input.getKey());
+			e.setValue(input.getValue());
+			return e;
+		}	
+	};
+	
 	@Override
 	public OAuth2AccessToken enhance(OAuth2AccessToken accessToken,	OAuth2Authentication authentication)  {
 		OAuth2AccessTokenEntity ret = (OAuth2AccessTokenEntity) super.enhance(accessToken, authentication);
-
-		Serializable contextId = authentication.getOAuth2Request().getExtensions().get("context_id");
-		Set<String> requirements = contextRequirements(authentication);
-		Set<LaunchContextEntity> context  = new HashSet<LaunchContextEntity>();
+	
+		@SuppressWarnings("unchecked")
+		Map<String,String> contextMap = (HashMap<String,String>) authentication.getOAuth2Request().getExtensions().get("launch_context");
 		
-		if (contextId != null) {
-			context = launchContextResolver.resolve(null, null, contextId.toString());	
-		}
-		
-		Set<String> available = FluentIterable
-				.from(context)
-				.transform(key)
+		Set<LaunchContextEntity> context = FluentIterable
+				.from(contextMap.entrySet())
+				.transform(toLaunchContextEntity)
 				.toSet();
 
-		// TODO Would like to throw an exception, but interface doesn't allow.
-		// What's the right way to approach this?
-		Set<String> missing = Sets.difference(requirements, available);
-		if (missing.size() > 0) {
-			return null;
-		}
-
-		ret.setLaunchContext(context);
+		ret.setLaunchContext(new HashSet<LaunchContextEntity>(context));
 		return ret;
 	}
 
