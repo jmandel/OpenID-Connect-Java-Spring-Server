@@ -23,7 +23,7 @@ INSERT INTO client_scope_TEMP (owner_id, scope) VALUES
 	('client', 'summary'),
 	('client', 'smart'),
 	('client', 'launch'),
-	('client', 'launch/patieht'),
+	('client', 'launch/patient'),
 	('client', 'launch/encounter'),
 	('client', 'launch/other'),
 	('client', 'smart'),
