@@ -48,6 +48,10 @@ public class SmartLaunchTokenEnhancer extends ConnectTokenEnhancer {
 	
 		@SuppressWarnings("unchecked")
 		Map<String,String> contextMap = (HashMap<String,String>) authentication.getOAuth2Request().getExtensions().get("launch_context");
+
+		if (contextMap == null) {
+		  return ret;
+		}
 		
 		Set<LaunchContextEntity> context = FluentIterable
 				.from(contextMap.entrySet())

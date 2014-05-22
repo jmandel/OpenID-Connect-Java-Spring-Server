@@ -1,4 +1,6 @@
 
+
+
 Client ID
 3ef092aa-eb6d-4a2d-8763-de33b95bb55a
 Client Secret
@@ -34,10 +36,19 @@ https://fhir-server/authorize?
   response_type=code&
   prompt=none&
   scope=
+
     launch:123 launch/patient launch/encounter
-    user/services/RecentPatients       # A way to learn when context may have changed
-    patient/resources/Observation.read patient/resources/Patient.read
     openid profile
+
+    one_patient/Patient.read
+    one_patient/Observation.read
+
+    as_user/Patient.read
+    as_user/Appointment.write
+    as_user/Appointment.read
+
+    as_user/_service/smart/RecentPatients.read
+
   redirect_uri=https//bp-app/post-auth
 
 ### 3. On approval and code exchange, EHR responds 
@@ -58,6 +69,13 @@ Response includes access token and context parameters:
       fhir_practioenr_id: "123"
     }
 }
+
+
+--> Proposals service:
+
+POST /MedicationPrescription/_service/smart/RxProposal
+one_patient/services/RxProposal
+
 
 ## Appointment manage app asks for:
 https://fhir-server/authorize?

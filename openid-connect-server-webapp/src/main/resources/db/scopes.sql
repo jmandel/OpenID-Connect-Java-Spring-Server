@@ -20,6 +20,7 @@ INSERT INTO system_scope_TEMP (scope, description, icon, allow_dyn_reg, default_
   ('summary', 'FHIR summary', 'user', true, false, true, 'Access clinical summary for patient'),
   ('smart', 'SMART', 'user', true, false, true, 'Details of SMART authorization'),
   ('launch', 'EHR Context', 'user', true, false, false, null),
+  ('fhir-complete', 'all FHIR permissions for user', 'user', true, false, false, null),
   ('launch/patient', 'Launch with patient context', 'user', true, false, true, 'Launch patient'),
   ('launch/encounter', 'Launch with encounter context', 'user', true, false, true, 'Launch encounter'),
   ('launch/resource', 'Launch with resource context', 'user', true, false, true, 'Launch resource'),

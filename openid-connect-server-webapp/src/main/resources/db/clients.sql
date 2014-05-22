@@ -26,6 +26,7 @@ INSERT INTO client_scope_TEMP (owner_id, scope) VALUES
 	('client', 'launch/patient'),
 	('client', 'launch/encounter'),
 	('client', 'launch/other'),
+	('client', 'fhir-complete'),
 	('client', 'smart'),
 	('client', 'offline_access');
 
