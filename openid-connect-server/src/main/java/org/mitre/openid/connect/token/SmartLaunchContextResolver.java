@@ -1,37 +1,84 @@
 package org.mitre.openid.connect.token;
 
 import java.io.Serializable;
+import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-
-import org.bouncycastle.jcajce.provider.digest.GOST3411.HashMac;
-import org.mitre.oauth2.model.LaunchContextEntity;
+import org.apache.commons.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 @Component
 public class SmartLaunchContextResolver implements LaunchContextResolver {
 
+	private String fhirEndpoint;
+	private String username;
+	private String password;
 
 	@Override
 	public Serializable resolve(String launchId, Map<String,String> needs) throws NeedUnmetException {
 		
-		HashMap<String,String> params = new HashMap<String,String>();
+		String auth = getUsername() + ":" + getPassword();
 		
+		String encodedAuth = new String(Base64.encodeBase64(auth.getBytes(Charset.forName("US-ASCII"))));
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Authorization", "Basic " + encodedAuth);		
+		HttpEntity<String> reqAuth = new HttpEntity<String>(headers);
+		
+		String url = fhirEndpoint + "/_services/smart/Launch/" + launchId;
+		
+	    RestTemplate restTemplate = new RestTemplate();    
+	    ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, reqAuth, String.class);
+	  
+	    JsonObject gotParams = ((JsonObject) new JsonParser().parse(response.getBody()))
+	    		.get("parameters")
+	    		.getAsJsonObject();
+	    
+		HashMap<String,String> params = new HashMap<String, String>();
 		// TODO check for mismatched needs and throw an exception if found
 		// TODO verify that the use who created this context is the same as the
 		//      currently authenticated user.
-		if (needs.containsKey("launch/patient")){
-			params.put("launch_patient", "patient found from -> " +launchId );
+		
+		for (String need : needs.keySet()) {
+			String bareName = need.split("/")[1];
+			if (gotParams.get(bareName) != null){
+				params.put(need.replace('/', '_'), gotParams.get(bareName).getAsString());				
+			}
 		}
-
-		if (needs.containsKey("launch/encounter")){
-			params.put("launch_encounter", "encounter found from -> " +launchId );
-		}
-
 
 		return params;
+	}
+
+	public String getFhirEndpoint() {
+		return fhirEndpoint;
+	}
+
+	public void setFhirEndpoint(String fhirEndpoint) {
+		this.fhirEndpoint = fhirEndpoint;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 }

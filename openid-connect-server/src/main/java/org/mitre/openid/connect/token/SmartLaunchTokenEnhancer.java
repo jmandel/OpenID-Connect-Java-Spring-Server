@@ -62,13 +62,4 @@ public class SmartLaunchTokenEnhancer extends ConnectTokenEnhancer {
 		return ret;
 	}
 
-	private Set<String> contextRequirements(OAuth2Authentication authentication) {
-		Set<String> contextRequired = new HashSet<String>();
-		if (authentication.getOAuth2Request().getExtensions().get("context_required") != null) {
-			for (String s : authentication.getOAuth2Request().getExtensions().get("context_required").toString().split(" ")) {
-				contextRequired.add("context_"+s);
-			}
-		}
-		return contextRequired;
-	}
 }

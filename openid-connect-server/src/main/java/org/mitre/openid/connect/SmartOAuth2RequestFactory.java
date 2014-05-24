@@ -36,13 +36,12 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 	Predicate<String> isLaunchContext = new Predicate<String>() {
 		@Override
 		public boolean apply(String input) {
-			return input.startsWith("launch");
+			return input.startsWith("launch/");
 		}
 	};
 
 	@Autowired
-	public SmartOAuth2RequestFactory(
-			ClientDetailsEntityService clientDetailsService) {
+	public SmartOAuth2RequestFactory(ClientDetailsEntityService clientDetailsService) {
 		super(clientDetailsService);
 	}
 
@@ -59,7 +58,7 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 			launchReqs.put(e.getKey(), e.getValue());
 		}
 
-		String launchId = launchReqs.remove("launch");
+		String launchId = launchReqs.remove("launch/id");
 
 		if (launchId != null) {
 			try {
@@ -77,7 +76,7 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
 		if(launchId != null){
 			Set<String> plusLaunch = new HashSet<String>(ret.getScope());
-			plusLaunch.add("launch");
+			plusLaunch.add("launch/id");
 			ret.setScope(plusLaunch);
 		}
 		return ret;

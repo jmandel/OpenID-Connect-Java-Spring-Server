@@ -22,12 +22,14 @@ INSERT INTO client_scope_TEMP (owner_id, scope) VALUES
 	('client', 'search'),
 	('client', 'summary'),
 	('client', 'smart'),
-	('client', 'launch'),
+	('client', 'orchestrate-launch'),
+	('client', 'launch/id'),
 	('client', 'launch/patient'),
 	('client', 'launch/encounter'),
 	('client', 'launch/other'),
 	('client', 'fhir-complete'),
 	('client', 'smart'),
+	('client', 'user/Patient.read'),
 	('client', 'offline_access');
 
 INSERT INTO client_redirect_uri_TEMP (owner_id, redirect_uri) VALUES

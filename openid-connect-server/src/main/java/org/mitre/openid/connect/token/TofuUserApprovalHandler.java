@@ -216,11 +216,15 @@ public class TofuUserApprovalHandler implements UserApprovalHandler {
 					//Make sure this scope is allowed for the given client
 					if (systemScopes.scopesMatch(client.getScope(), approveSet)) {
 
-						// If it's structured, assign the user-specified parameter
+						// If it's structured, assign the user-specified parameter, if any
 						SystemScope systemScope = systemScopes.getByValue(scope);
 						if (systemScope != null && systemScope.isStructured()){
 							String paramValue = approvalParams.get("scopeparam_" + scope);
-							allowedScopes.add(scope + ":"+paramValue);
+							if (!Strings.isNullOrEmpty(paramValue)) {
+								allowedScopes.add(scope + ":"+paramValue);								
+							} else {
+								allowedScopes.add(scope);
+							}
 							// .. and if it's unstructured, we're all set
 						} else {
 							allowedScopes.add(scope);

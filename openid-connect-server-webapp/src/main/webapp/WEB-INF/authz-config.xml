@@ -55,11 +55,16 @@
 		<oauth:custom-grant token-granter-ref="jwtAssertionTokenGranter" />
 	</oauth:authorization-server>
 
-	<bean id="tokenEnhancer" class=" org.mitre.openid.connect.token.SmartLaunchTokenEnhancer" />
+	<bean id="tokenEnhancer" class="org.mitre.openid.connect.token.SmartLaunchTokenEnhancer" />
 	<bean id="oauthAccessDeniedHandler" class="org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler" />
 	<bean id="oauthRequestValidator" class="org.mitre.oauth2.token.StructuredScopeAwareOAuth2RequestValidator" />
 
-
+	<bean id="smartLaunchContextResolver" class="org.mitre.openid.connect.token.SmartLaunchContextResolver">
+	  <property name = "fhirEndpoint" value= "${CONTEXT_FHIR_ENDPOINT:http://localhost:8080}"/>
+	  <property name = "username" value= "${CONTEXT_USERNAME:client}"/>
+	  <property name = "password" value = "${CONTEXT_PASSWORD:secret}"/>
+	</bean>
+<!-- 
 	<bean id="oauth2AuthorizationEndpoint" class="org.mitre.openid.connect.web.SmartAuthorizationEndpoint">
 	  <property name = "tokenGranter" ref = "oauth2TokenGranter"/>
 	  <property name = "clientDetailsService" ref = "defaultOAuth2ClientDetailsEntityService"/>
@@ -69,5 +74,6 @@
 	  <property name = "oAuth2RequestValidator" ref = "oauthRequestValidator"/>
 	  <property name = "authorizationCodeServices" ref = "defaultOAuth2AuthorizationCodeService"/>
 	</bean>
+	 -->
 
 </beans>

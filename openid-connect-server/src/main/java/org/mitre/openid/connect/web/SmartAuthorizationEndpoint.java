@@ -26,7 +26,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 @SessionAttributes("authorizationRequest")
-@RequestMapping(value = "/authorize")
+//@RequestMapping(value = "/authorize")
 public class SmartAuthorizationEndpoint extends AuthorizationEndpoint implements
 		InitializingBean {
 
