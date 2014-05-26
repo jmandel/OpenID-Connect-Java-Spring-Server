@@ -170,6 +170,14 @@
 		<property name="filterProcessesUrl" value="/token" />
 	</bean>
 
+	<bean id="clientUserDetailsService" class="org.mitre.oauth2.service.impl.DefaultClientUserDetailsService">
+     <property name="adminClients">
+        <set>
+           <value>client</value>
+        </set>
+      </property>
+    </bean>
+      
 	<security:authentication-manager id="clientAuthenticationManager">
 		<security:authentication-provider user-service-ref="clientUserDetailsService" />
 	</security:authentication-manager>

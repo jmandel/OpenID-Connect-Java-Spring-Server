@@ -18,6 +18,8 @@ package org.mitre.oauth2.service.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -41,6 +43,7 @@ public class DefaultClientUserDetailsService implements UserDetailsService {
 
 	@Autowired
 	private ClientDetailsService clientDetailsService;
+	private Collection<String> adminClients = new HashSet<String>();
 
 	@Override
 	public UserDetails loadUserByUsername(String clientId) throws  UsernameNotFoundException {
@@ -61,6 +64,11 @@ public class DefaultClientUserDetailsService implements UserDetailsService {
 				authorities = new ArrayList<GrantedAuthority>();
 				GrantedAuthority roleClient = new SimpleGrantedAuthority("ROLE_CLIENT");
 				authorities.add(roleClient);
+				
+				if (adminClients.contains(client.getClientId())){
+					roleClient = new SimpleGrantedAuthority("ROLE_ADMIN");
+					authorities.add(roleClient);
+				}
 			}
 
 			return new User(clientId, password, enabled, accountNonExpired, credentialsNonExpired, accountNonLocked, authorities);
@@ -76,6 +84,14 @@ public class DefaultClientUserDetailsService implements UserDetailsService {
 
 	public void setClientDetailsService(ClientDetailsService clientDetailsService) {
 		this.clientDetailsService = clientDetailsService;
+	}
+
+	public Collection<String> getAdminClients() {
+		return adminClients;
+	}
+
+	public void setAdminClients(Collection<String> adminClients) {
+		this.adminClients = adminClients;
 	}
 
 }
