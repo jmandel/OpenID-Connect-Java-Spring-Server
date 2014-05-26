@@ -36,7 +36,7 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 	Predicate<String> isLaunchContext = new Predicate<String>() {
 		@Override
 		public boolean apply(String input) {
-			return input.startsWith("launch/");
+			return input.startsWith("launch");
 		}
 	};
 
@@ -58,7 +58,8 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 			launchReqs.put(e.getKey(), e.getValue());
 		}
 
-		String launchId = launchReqs.remove("launch/id");
+		boolean requestingLaunch = launchReqs.containsKey("launch");
+		String launchId = launchReqs.remove("launch");
 
 		if (launchId != null) {
 			try {
@@ -68,6 +69,8 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 				e1.printStackTrace();
 				return null;
 			}
+		} else if (requestingLaunch){ // asking for launch, but no launch ID provided
+			ret.getExtensions().put("external_launch_required", launchReqs);
 		}
 
 		ret.setScope(Sets.difference(ret.getScope(),
@@ -76,7 +79,7 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 
 		if(launchId != null){
 			Set<String> plusLaunch = new HashSet<String>(ret.getScope());
-			plusLaunch.add("launch/id");
+			plusLaunch.add("launch");
 			ret.setScope(plusLaunch);
 		}
 		return ret;

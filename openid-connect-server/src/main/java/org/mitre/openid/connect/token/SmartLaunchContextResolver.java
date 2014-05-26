@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -47,10 +50,10 @@ public class SmartLaunchContextResolver implements LaunchContextResolver {
 		// TODO verify that the use who created this context is the same as the
 		//      currently authenticated user.
 		
-		for (String need : needs.keySet()) {
-			String bareName = need.split("/")[1];
-			if (gotParams.get(bareName) != null){
-				params.put(need.replace('/', '_'), gotParams.get(bareName).getAsString());				
+		for (Entry<String, JsonElement> need : gotParams.entrySet()) {
+			String k = need.getKey();
+			if (gotParams.get(k) != null){
+				params.put(k, gotParams.get(k).getAsString());				
 			}
 		}
 

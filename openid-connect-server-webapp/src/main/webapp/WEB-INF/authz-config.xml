@@ -64,7 +64,7 @@
 	  <property name = "username" value= "${CONTEXT_USERNAME:client}"/>
 	  <property name = "password" value = "${CONTEXT_PASSWORD:secret}"/>
 	</bean>
-<!-- 
+
 	<bean id="oauth2AuthorizationEndpoint" class="org.mitre.openid.connect.web.SmartAuthorizationEndpoint">
 	  <property name = "tokenGranter" ref = "oauth2TokenGranter"/>
 	  <property name = "clientDetailsService" ref = "defaultOAuth2ClientDetailsEntityService"/>
@@ -74,6 +74,5 @@
 	  <property name = "oAuth2RequestValidator" ref = "oauthRequestValidator"/>
 	  <property name = "authorizationCodeServices" ref = "defaultOAuth2AuthorizationCodeService"/>
 	</bean>
-	 -->
 
 </beans>

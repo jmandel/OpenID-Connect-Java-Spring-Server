@@ -59,7 +59,7 @@ import com.google.gson.JsonSyntaxException;
 
 @Controller
 @RequestMapping("/api/clients")
-@PreAuthorize("hasRole('ROLE_USER')")
+@PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_CLIENT')")
 public class ClientAPI {
 
 	@Autowired

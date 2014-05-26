@@ -26,7 +26,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 @SessionAttributes("authorizationRequest")
-//@RequestMapping(value = "/authorize")
+@RequestMapping(value = "/authorize")
 public class SmartAuthorizationEndpoint extends AuthorizationEndpoint implements
 		InitializingBean {
 
@@ -60,29 +60,22 @@ public class SmartAuthorizationEndpoint extends AuthorizationEndpoint implements
 	public ModelAndView authorize(Map<String, Object> model,
 			@RequestParam Map<String, String> parameters,
 			SessionStatus sessionStatus, Principal principal) {
-
-		AuthorizationRequest authorizationRequest = getOAuth2RequestFactory()
-				.createAuthorizationRequest(parameters);
-
-		Collection<JsonObject> smartScopes = FluentIterable
-				.from(authorizationRequest.getScope())
-				.filter(isSmartScope)
-				.transform(toJson)
-				.filter(needsContext)
-				.toSet();
-
-		if (smartScopes.size() > 0) {
-			return new ModelAndView(new RedirectView(
-					"http://smartplatforms.org"));
-		}
 		
 		 ModelAndView mv  =  super.authorize(model, parameters, sessionStatus, principal);
+
+   		 AuthorizationRequest authorizationRequest = (AuthorizationRequest) model.get("authorizationRequest");
+  
+   		
+		if (authorizationRequest!= null && authorizationRequest.getExtensions().containsKey("external_launch_required")) {
+			return new ModelAndView(new RedirectView(
+					"https://fhir.me?" + authorizationRequest.getExtensions().get("external_launch_request").toString()));
+		}
+		
 		 
 		 // Plan: for SMART requests that need patient-level context, redirect to a patient-picker, passing CSRF token
 		 // For SMART request that don't need patient-level context, redirect to a simplified approval screen
 		 // be sure to have automatic approval of the trusted context-picking app, so it always knows the current user.
-		//return new ModelAndView(new RedirectView(
-		//			"http://localhos/index.html#" + authorizationRequest.getExtensions().get("csrf")));
+
 		 return mv;
 	}
 	

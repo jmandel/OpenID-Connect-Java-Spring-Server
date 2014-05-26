@@ -19,14 +19,15 @@ INSERT INTO system_scope_TEMP (scope, description, icon, allow_dyn_reg, default_
   ('search', 'FHIR search', 'user', true, false, true, 'Search for resources belonging to patient'),
   ('summary', 'FHIR summary', 'user', true, false, true, 'Access clinical summary for patient'),
   ('smart', 'SMART', 'user', true, false, true, 'Details of SMART authorization'),
-  ('orchestrate-launch', 'Orchestrate a launch with EHR context', 'user', true, false, false, null),
-  ('fhir-complete', 'all FHIR permissions for user', 'user', true, false, false, null),
-  ('launch/id', 'Launch with an existing context', 'user', true, false, true, 'Launch from existing context'),
+  ('smart/orchestrate_launch', 'Orchestrate a launch with EHR context', 'user', true, false, false, null),
+  ('launch', 'Launch with an existing context', 'user', true, false, true, 'Launch from existing context'),
   ('launch/patient', 'Launch with patient context', 'user', true, false, true, 'Launch patient'),
   ('launch/encounter', 'Launch with encounter context', 'user', true, false, true, 'Launch encounter'),
   ('launch/resource', 'Launch with resource context', 'user', true, false, true, 'Launch resource'),
   ('launch/other', 'Launch with other context', 'user', true, false, true, 'Launch other'), 
-  ('user/Patient.read', 'Read all Patient data that you can access', 'user', true, false, false, null), 
+  ('user/Patient.read', 'all FHIR permissions for user', 'user', true, false, false, null), 
+  ('user/*.*', 'Read all Patient data that you can access', 'user', true, false, false, null), 
+  ('patient/*.read', 'all FHIR permissions for a single patient record', 'user', true, false, false, null), 
   ('offline_access', 'offline access', 'time', true, true, false, null);
   
 --
