@@ -47,7 +47,7 @@
 	<bean id="oauthAccessDeniedHandler"
 		class="org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler" />
 	<bean id="oauthRequestValidator"
-		class="org.mitre.oauth2.token.StructuredScopeAwareOAuth2RequestValidator" />
+		class="org.smartplatforms.oauth2.ScopeValidator" />
 
 	<bean id="smartLaunchContextResolver" class="org.smartplatforms.oauth2.SmartLaunchContextResolver">
 		<property name="fhirEndpoint"

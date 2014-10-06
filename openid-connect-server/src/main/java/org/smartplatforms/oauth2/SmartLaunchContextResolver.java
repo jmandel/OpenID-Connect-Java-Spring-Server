@@ -10,9 +10,11 @@ import org.apache.commons.codec.binary.Base64;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -40,8 +42,17 @@ public class SmartLaunchContextResolver implements LaunchContextResolver {
 		String url = fhirEndpoint + "/_services/smart/Launch/" + launchId;
 		
 	    RestTemplate restTemplate = new RestTemplate();    
-	    ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, reqAuth, String.class);
-	  
+	    ResponseEntity<String> response;
+	   
+	   try {
+		response = restTemplate.exchange(url, HttpMethod.GET, reqAuth, String.class);
+	   } catch (ResourceAccessException e) {
+	     throw new NeedUnmetException();
+	   }
+	    if (!response.getStatusCode().equals(HttpStatus.OK)){
+	      throw new NeedUnmetException();
+	    }
+  
 	    JsonObject gotParams = ((JsonObject) new JsonParser().parse(response.getBody()))
 	    		.get("parameters")
 	    		.getAsJsonObject();

@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 import org.mitre.oauth2.service.ClientDetailsEntityService;
 import org.mitre.openid.connect.ConnectOAuth2RequestFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.common.exceptions.InvalidScopeException;
+
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
 import org.springframework.stereotype.Service;
 
@@ -56,8 +58,7 @@ public class SmartOAuth2RequestFactory extends ConnectOAuth2RequestFactory {
 			try {
 				ret.getExtensions().put("launch_context", launchContextResolver.resolve(launchId, launchReqs));
 			} catch (NeedUnmetException e1) {
-				e1.printStackTrace();
-				return null;
+				ret.getExtensions().put("invalid_launch", "Couldn't resolve launch id: " + launchId);
 			}
 		} else if (requestingLaunch) { // asking for launch, but no launch ID provided
 			ret.getExtensions().put("external_launch_required", launchReqs);
